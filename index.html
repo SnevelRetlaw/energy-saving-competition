@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Challenge Leaderboard</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SheetJS for reading Excel files -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: sans-serif; background-color: #f3f4f6; }
+        .loader { border-top-color: #3498db; -webkit-animation: spinner 1.5s linear infinite; animation: spinner 1.5s linear infinite; }
+        @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="p-8">
+
+<div class="max-w-4xl mx-auto bg-white shadow-md rounded-lg p-6">
+    <h1 class="text-3xl font-bold mb-6 text-gray-800">🏆 Challenge Leaderboard</h1>
+
+    <!-- Configuration Section (Hidden by default, toggle with button) -->
+    <div id="config-section" class="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded hidden">
+        <h3 class="font-bold text-yellow-800 mb-2">⚙️ Configuration</h3>
+        <label class="block text-sm">Supabase URL:</label>
+        <input type="text" id="sb-url" class="w-full p-2 border rounded mb-2" placeholder="https://xyz.supabase.co">
+        <label class="block text-sm">Supabase Anon Key:</label>
+        <input type="password" id="sb-key" class="w-full p-2 border rounded mb-2" placeholder="eyJhbG...">
+        <button onclick="saveConfig()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Save & Connect</button>
+        <p class="text-xs text-gray-500 mt-2">Your credentials are stored locally in your browser only.</p>
+    </div>
+
+    <button onclick="toggleConfig()" class="text-sm text-gray-500 underline mb-4">Configure Supabase</button>
+
+    <!-- Upload Section -->
+    <div class="mb-8 p-4 bg-gray-50 rounded border border-gray-200">
+        <h2 class="text-xl font-semibold mb-2">📤 Upload Results (XLSX)</h2>
+        <p class="text-sm text-gray-600 mb-4">Upload an Excel file with columns: <strong>username</strong>, <strong>score</strong>.</p>
+        
+        <input type="file" id="fileInput" accept=".xlsx, .xls" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/>
+        
+        <div id="upload-status" class="mt-4 text-sm hidden"></div>
+        <div id="loading" class="hidden flex items-center mt-2">
+            <div class="loader ease-linear rounded-full border-2 border-t-2 border-gray-200 h-4 w-4 mr-2"></div>
+            Processing...
+        </div>
+    </div>
+
+    <!-- Leaderboard Section -->
+    <div>
+        <h2 class="text-xl font-semibold mb-4">🥇 Current Standings</h2>
+        <button onclick="fetchLeaderboard()" class="mb-4 text-sm bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded">Refresh List</button>
+        
+        <div id="leaderboard-container" class="overflow-x-auto">
+            <table class="min-w-full bg-white border border-gray-200">
+                <thead>
+                    <tr class="bg-gray-100">
+                        <th class="py-2 px-4 border-b text-left">Rank</th>
+                        <th class="py-2 px-4 border-b text-left">Username</th>
+                        <th class="py-2 px-4 border-b text-right">Score</th>
+                    </tr>
+                </thead>
+                <tbody id="leaderboard-body">
+                    <tr><td colspan="3" class="text-center py-4 text-gray-500">Click "Configure" to connect to Supabase first.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- Configuration ---
+    let supabaseUrl = localStorage.getItem('sb_url') || '';
+    let supabaseKey = localStorage.getItem('sb_key') || '';
+    let supabaseClient = null;
+
+    // Initialize Supabase if keys exist
+    if (supabaseUrl && supabaseKey) {
+        supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+        fetchLeaderboard();
+    }
+
+    function toggleConfig() {
+        const el = document.getElementById('config-section');
+        el.classList.toggle('hidden');
+    }
+
+    function saveConfig() {
+        const url = document.getElementById('sb-url').value.trim();
+        const key = document.getElementById('sb-key').value.trim();
+        
+        if (!url || !key) {
+            alert("Please enter both URL and Key.");
+            return;
+        }
+
+        localStorage.setItem('sb_url', url);
+        localStorage.setItem('sb_key', key);
+        supabaseClient = window.supabase.createClient(url, key);
+        
+        document.getElementById('config-section').classList.add('hidden');
+        fetchLeaderboard();
+        alert("Connected successfully!");
+    }
+
+    async function fetchLeaderboard() {
+        if (!supabaseClient) return;
+        
+        const tbody = document.getElementById('leaderboard-body');
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4">Loading...</td></tr>';
+
+        try {
+            // Fetch users ordered by score descending
+            const { data, error } = await supabaseClient
+                .from('Participants')
+                .select('*')
+                .order('score', { ascending: false });
+
+            if (error) throw error;
+
+            tbody.innerHTML = '';
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-gray-500">No users found yet.</td></tr>';
+                return;
+            }
+
+            data.forEach((house, index) => {
+                const row = `
+                    <tr class="hover:bg-gray-50">
+                        <td class="py-2 px-4 border-b font-bold">${index + 1}</td>
+                        <td class="py-2 px-4 border-b">${house.House_name}</td>
+                        <td class="py-2 px-4 border-b text-right font-mono">${house.Score}</td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        } catch (err) {
+            console.error(err);
+            tbody.innerHTML = `<tr><td colspan="3" class="text-center py-4 text-red-500">Error: ${err.message}</td></tr>`;
+        }
+    }
+
+    // Handle File Upload
+    document.getElementById('fileInput').addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const statusDiv = document.getElementById('upload-status');
+        const loadingDiv = document.getElementById('loading');
+        
+        statusDiv.classList.add('hidden');
+        loadingDiv.classList.remove('hidden');
+
+        try {
+            const reader = new FileReader();
+            
+            reader.onload = async (event) => {
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                
+                // Assume data is in the first sheet
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+
+                if (jsonData.length === 0) {
+                    throw new Error("Excel file appears empty.");
+                }
+
+                // Validate columns
+                const requiredCols = ['username', 'score'];
+                const firstRow = jsonData[0];
+                if (!requiredCols.every(col => Object.keys(firstRow).includes(col))) {
+                    throw new Error(`Excel must have columns: ${requiredCols.join(', ')}`);
+                }
+
+                // Process data for Supabase
+                const usersToUpdate = jsonData.map(row => ({
+                    username: row.username,
+                    score: parseInt(row.score) || 0
+                }));
+
+                // Upsert logic: Insert new or Update existing based on username
+                // Note: Supabase upsert requires a unique constraint on the column used for matching.
+                // If you haven't set a unique constraint on 'username' in Supabase, this might fail.
+                // Alternative: Fetch all, match locally, then bulk update. 
+                // For simplicity, we will try upsert. If it fails due to constraint, we'll fallback to manual logic.
+                
+                const { error: upsertError } = await supabaseClient
+                    .from('users')
+                    .upsert(usersToUpdate, { onConflict: 'username' }); // Requires unique constraint on 'username'
+
+                if (upsertError) {
+                    // Fallback: Manual Upsert if unique constraint fails
+                    console.warn("Upsert failed, trying manual match...", upsertError.message);
+                    
+                    // Fetch existing users to map IDs
+                    const { data: existingUsers } = await supabaseClient.from('users').select('id, username');
+                    const userMap = {};
+                    existingUsers.forEach(u => userMap[u.username.toLowerCase()] = u.id);
+
+                    const updates = [];
+                    const inserts = [];
+
+                    usersToUpdate.forEach(u => {
+                        const key = u.username.toLowerCase();
+                        if (userMap[key]) {
+                            updates.push({ id: userMap[key], score: u.score });
+                        } else {
+                            inserts.push(u);
+                        }
+                    });
+
+                    if (updates.length > 0) {
+                        await supabaseClient.from('users').upsert(updates);
+                    }
+                    if (inserts.length > 0) {
+                        await supabaseClient.from('users').insert(inserts);
+                    }
+                }
+
+                loadingDiv.classList.add('hidden');
+                statusDiv.textContent = `✅ Successfully processed ${jsonData.length} entries!`;
+                statusDiv.className = "mt-4 text-sm text-green-600";
+                statusDiv.classList.remove('hidden');
+                
+                // Refresh list
+                fetchLeaderboard();
+            };
+
+            reader.readAsArrayBuffer(file);
+        } catch (err) {
+            loadingDiv.classList.add('hidden');
+            statusDiv.textContent = `❌ Error: ${err.message}`;
+            statusDiv.className = "mt-4 text-sm text-red-600";
+            statusDiv.classList.remove('hidden');
+        }
+    });
+</script>
+
+</body>
+</html>
