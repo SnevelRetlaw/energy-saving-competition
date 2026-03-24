@@ -21,19 +21,6 @@
 <div class="max-w-4xl mx-auto bg-white shadow-md rounded-lg p-6">
     <h1 class="text-3xl font-bold mb-6 text-gray-800">🏆 Challenge Leaderboard</h1>
 
-    <!-- Configuration Section (Hidden by default, toggle with button) -->
-    <div id="config-section" class="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded hidden">
-        <h3 class="font-bold text-yellow-800 mb-2">⚙️ Configuration</h3>
-        <label class="block text-sm">Supabase URL:</label>
-        <input type="text" id="sb-url" class="w-full p-2 border rounded mb-2" placeholder="https://xyz.supabase.co">
-        <label class="block text-sm">Supabase Anon Key:</label>
-        <input type="password" id="sb-key" class="w-full p-2 border rounded mb-2" placeholder="eyJhbG...">
-        <button onclick="saveConfig()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Save & Connect</button>
-        <p class="text-xs text-gray-500 mt-2">Your credentials are stored locally in your browser only.</p>
-    </div>
-
-    <button onclick="toggleConfig()" class="text-sm text-gray-500 underline mb-4">Configure Supabase</button>
-
     <!-- Leaderboard Section -->
     <div>
         <h2 class="text-xl font-semibold mb-4">🥇 Current Standings</h2>
@@ -58,8 +45,8 @@
 
 <script>
     // --- Configuration ---
-    let supabaseUrl = localStorage.getItem('sb_url') || '';
-    let supabaseKey = localStorage.getItem('sb_key') || '';
+    let supabaseUrl = "https://bwkkobxbsfxlykhvhyiu.supabase.co"
+    let supabaseKey = "sb_publishable_n3rZvLIFB23tn9teqoOc0A_tbmjl94r"
     let supabaseClient = null;
 
     // Initialize Supabase if keys exist
