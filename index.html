@@ -206,7 +206,7 @@
                     usersToUpdate.forEach(u => {
                         const key = u.username.toLowerCase();
                         if (userMap[key]) {
-                            updates.push({ id: userMap[key], score: u.score });
+                            updates.push({ id: userMap[key], score: u.Score });
                         } else {
                             inserts.push(u);
                         }
