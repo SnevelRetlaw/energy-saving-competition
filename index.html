@@ -41,6 +41,19 @@
             </table>
         </div>
     </div>
+    
+    <div class="mb-8 p-4 bg-gray-50 rounded border border-gray-200">
+        <h2 class="text-xl font-semibold mb-2">📤 Upload Results (XLSX)</h2>
+        <p class="text-sm text-gray-600 mb-4">Upload an Excel file:</p>
+        
+        <input type="file" id="fileInput" accept=".xlsx, .xls" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/>
+        
+        <div id="upload-status" class="mt-4 text-sm hidden"></div>
+        <div id="loading" class="hidden flex items-center mt-2">
+            <div class="loader ease-linear rounded-full border-2 border-t-2 border-gray-200 h-4 w-4 mr-2"></div>
+            Processing...
+        </div>
+    </div>
 </div>
 
 <script>
@@ -49,33 +62,13 @@
     let supabaseKey = "sb_publishable_n3rZvLIFB23tn9teqoOc0A_tbmjl94r"
     let supabaseClient = null;
 
-    // Initialize Supabase if keys exist
-    if (supabaseUrl && supabaseKey) {
-        supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
-        fetchLeaderboard();
-    }
+    // Initialize Supabase
+    supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+    fetchLeaderboard();
 
     function toggleConfig() {
         const el = document.getElementById('config-section');
         el.classList.toggle('hidden');
-    }
-
-    function saveConfig() {
-        const url = document.getElementById('sb-url').value.trim();
-        const key = document.getElementById('sb-key').value.trim();
-        
-        if (!url || !key) {
-            alert("Please enter both URL and Key.");
-            return;
-        }
-
-        localStorage.setItem('sb_url', url);
-        localStorage.setItem('sb_key', key);
-        supabaseClient = window.supabase.createClient(url, key);
-        
-        document.getElementById('config-section').classList.add('hidden');
-        fetchLeaderboard();
-        alert("Connected successfully!");
     }
 
     async function fetchLeaderboard() {
@@ -114,6 +107,20 @@
             tbody.innerHTML = `<tr><td colspan="3" class="text-center py-4 text-red-500">Error: ${err.message}</td></tr>`;
         }
     }
+
+    // Testing file upload
+    document.getElementById('fileInput').addEventListener('change', async (e) => {
+        const file = e.target.files[0]
+        if (!file) return
+
+        const fileName = `${Date.now()}_${file.name}`
+        const {data, error: uploadError} = await supabaseClient.storage.from('xlsx files').upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: false
+        })
+
+        if (uploadError) throw uploadError
+    })
 
 </script>
 
