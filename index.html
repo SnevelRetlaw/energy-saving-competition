@@ -130,8 +130,9 @@
                 const row = `
                     <tr class="hover:bg-gray-50">
                         <td class="py-2 px-4 border-b font-bold">${index + 1}</td>
-                        <td class="py-2 px-4 border-b">${house.House_name}</td>
-                        <td class="py-2 px-4 border-b text-right font-mono">${house.Score}</td>
+                        <td class="py-2 px-4 border-b">${house.house_name}</td>
+                        <td class="py-2 px-4 border-b text-right font-mono">${house.score}</td>
+                        <td class="py-2 px-4 border-b text-right font-mono">${house}</td>
                     </tr>
                 `;
                 tbody.innerHTML += row;
