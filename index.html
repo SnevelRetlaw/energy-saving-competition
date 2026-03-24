@@ -34,20 +34,6 @@
 
     <button onclick="toggleConfig()" class="text-sm text-gray-500 underline mb-4">Configure Supabase</button>
 
-    <!-- Upload Section -->
-    <div class="mb-8 p-4 bg-gray-50 rounded border border-gray-200">
-        <h2 class="text-xl font-semibold mb-2">📤 Upload Results (XLSX)</h2>
-        <p class="text-sm text-gray-600 mb-4">Upload an Excel file with columns: <strong>username</strong>, <strong>score</strong>.</p>
-        
-        <input type="file" id="fileInput" accept=".xlsx, .xls" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/>
-        
-        <div id="upload-status" class="mt-4 text-sm hidden"></div>
-        <div id="loading" class="hidden flex items-center mt-2">
-            <div class="loader ease-linear rounded-full border-2 border-t-2 border-gray-200 h-4 w-4 mr-2"></div>
-            Processing...
-        </div>
-    </div>
-
     <!-- Leaderboard Section -->
     <div>
         <h2 class="text-xl font-semibold mb-4">🥇 Current Standings</h2>
@@ -60,11 +46,10 @@
                         <th class="py-2 px-4 border-b text-left">Rank</th>
                         <th class="py-2 px-4 border-b text-left">Username</th>
                         <th class="py-2 px-4 border-b text-right">Score</th>
-                        <th class="py-2 px-4 border-b text-right">Full test</th>
                     </tr>
                 </thead>
                 <tbody id="leaderboard-body">
-                    <tr><td colspan="4" class="text-center py-4 text-gray-500">Click "Configure" to connect to Supabase first.</td></tr>
+                    <tr><td colspan="3" class="text-center py-4 text-gray-500">Click "Configure" to connect to Supabase first.</td></tr>
                 </tbody>
             </table>
         </div>
@@ -133,7 +118,6 @@
                         <td class="py-2 px-4 border-b font-bold">${index + 1}</td>
                         <td class="py-2 px-4 border-b">${house.house_name}</td>
                         <td class="py-2 px-4 border-b text-right font-mono">${house.score}</td>
-                        <td class="py-2 px-4 border-b text-right font-mono">${house}</td>
                     </tr>
                 `;
                 tbody.innerHTML += row;
@@ -144,101 +128,6 @@
         }
     }
 
-    // Handle File Upload
-    document.getElementById('fileInput').addEventListener('change', async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const statusDiv = document.getElementById('upload-status');
-        const loadingDiv = document.getElementById('loading');
-        
-        statusDiv.classList.add('hidden');
-        loadingDiv.classList.remove('hidden');
-
-        try {
-            const reader = new FileReader();
-            
-            reader.onload = async (event) => {
-                const data = new Uint8Array(event.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                
-                // Assume data is in the first sheet
-                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                const jsonData = XLSX.utils.sheet_to_json(firstSheet);
-
-                if (jsonData.length === 0) {
-                    throw new Error("Excel file appears empty.");
-                }
-
-                // Validate columns
-                const requiredCols = ['username', 'score'];
-                const firstRow = jsonData[0];
-                if (!requiredCols.every(col => Object.keys(firstRow).includes(col))) {
-                    throw new Error(`Excel must have columns: ${requiredCols.join(', ')}`);
-                }
-
-                // Process data for Supabase
-                const usersToUpdate = jsonData.map(row => ({
-                    username: row.username,
-                    score: parseInt(row.score) || 0
-                }));
-
-                // Upsert logic: Insert new or Update existing based on username
-                // Note: Supabase upsert requires a unique constraint on the column used for matching.
-                // If you haven't set a unique constraint on 'username' in Supabase, this might fail.
-                // Alternative: Fetch all, match locally, then bulk update. 
-                // For simplicity, we will try upsert. If it fails due to constraint, we'll fallback to manual logic.
-                
-                const { error: upsertError } = await supabaseClient
-                    .from('users')
-                    .upsert(usersToUpdate, { onConflict: 'username' }); // Requires unique constraint on 'username'
-
-                if (upsertError) {
-                    // Fallback: Manual Upsert if unique constraint fails
-                    console.warn("Upsert failed, trying manual match...", upsertError.message);
-                    
-                    // Fetch existing users to map IDs
-                    const { data: existingUsers } = await supabaseClient.from('users').select('id, username');
-                    const userMap = {};
-                    existingUsers.forEach(u => userMap[u.username.toLowerCase()] = u.id);
-
-                    const updates = [];
-                    const inserts = [];
-
-                    usersToUpdate.forEach(u => {
-                        const key = u.username.toLowerCase();
-                        if (userMap[key]) {
-                            updates.push({ id: userMap[key], score: u.Score });
-                        } else {
-                            inserts.push(u);
-                        }
-                    });
-
-                    if (updates.length > 0) {
-                        await supabaseClient.from('users').upsert(updates);
-                    }
-                    if (inserts.length > 0) {
-                        await supabaseClient.from('users').insert(inserts);
-                    }
-                }
-
-                loadingDiv.classList.add('hidden');
-                statusDiv.textContent = `✅ Successfully processed ${jsonData.length} entries!`;
-                statusDiv.className = "mt-4 text-sm text-green-600";
-                statusDiv.classList.remove('hidden');
-                
-                // Refresh list
-                fetchLeaderboard();
-            };
-
-            reader.readAsArrayBuffer(file);
-        } catch (err) {
-            loadingDiv.classList.add('hidden');
-            statusDiv.textContent = `❌ Error: ${err.message}`;
-            statusDiv.className = "mt-4 text-sm text-red-600";
-            statusDiv.classList.remove('hidden');
-        }
-    });
 </script>
 
 </body>
