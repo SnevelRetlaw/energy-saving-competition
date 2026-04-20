@@ -3,160 +3,121 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Challenge Leaderboard</title>
+    <title>Challenge Dashboard</title>
     <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- SheetJS for reading Excel files -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="styles.css">
     <style>
+        /* Keep any inline styles that aren't in styles.css if necessary, 
+           though most should be moved to styles.css for consistency */
         body { font-family: sans-serif; background-color: #f3f4f6; }
         .loader { border-top-color: #3498db; -webkit-animation: spinner 1.5s linear infinite; animation: spinner 1.5s linear infinite; }
         @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
-<body class="p-8">
+<body class="p-4 md:p-8">
 
-<div class="max-w-4xl mx-auto bg-white shadow-md rounded-lg p-6">
-    <h1 class="text-3xl font-bold mb-6 text-gray-800">🏆 Challenge Leaderboard</h1>
+<div class="max-w-7xl mx-auto dashboard-container">
+    <h1 class="text-3xl font-bold mb-6 text-gray-800 page-title">🏆 Challenge Dashboard</h1>
 
-    <!-- Leaderboard Section -->
-    <div>
-        <h2 class="text-xl font-semibold mb-4">🥇 Current Standings</h2>
-        <button onclick="fetchAndUpdateLeaderboard()" class="mb-4 text-sm bg-gray-200 hover:bg-gray-300 px-3 py-1 rounded">Refresh List</button>
+    <!-- Dashboard Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 dashboard-grid">
         
-        <div id="leaderboard-container" class="overflow-x-auto">
-            <table class="min-w-full bg-white border border-gray-200">
-                <thead>
-                    <tr class="bg-gray-100">
-                        <th class="py-2 px-4 border-b text-left">Rank</th>
-                        <th class="py-2 px-4 border-b text-left">Username</th>
-                        <th class="py-2 px-4 border-b text-right">Score</th>
-                    </tr>
-                </thead>
-                <tbody id="leaderboard-body">
-                    <tr><td colspan="3" class="text-center py-4">Loading...</td></tr>
-                </tbody>
-            </table>
+        <!-- Tile 1: Daily Activity -->
+        <div class="tile">
+            <div class="tile-header">
+                📊 Daily Activity
+                <span class="text-xs text-gray-500 tile-subtext">Coming soon</span>
+            </div>
+            <div class="placeholder-content">
+                <div>
+                    <svg class="w-12 h-12 mx-auto mb-2 placeholder-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                    <p>Daily activity metrics will appear here</p>
+                </div>
+            </div>
         </div>
-    </div>
 
-    <br/>
-
-    <div>
-        <h2 class="text-xl font-semibold mb-4">Challenges</h2>
-        
-        <div id="challenges-container" class="overflow-x-auto">
-            <ul id="challenges-list" class="min-w-full bg-white border border-gray-200">
-                <li class="text-center py-4">Loading ...</li>
-            </ul>
+        <!-- Tile 2: Challenges -->
+        <div class="tile">
+            <div class="tile-header">
+                🎯 Challenges
+                <button class="refresh-btn">Refresh</button>
+            </div>
+            <div id="challenges-container" class="flex-1 overflow-y-auto table-wrapper">
+                <ul id="challenges-list" class="challenge-list">
+                    <li class="text-center py-4 empty-state">Loading...</li>
+                </ul>
+            </div>
         </div>
+
+        <!-- Tile 3: Leaderboards -->
+        <div class="tile">
+            <div class="tile-header">
+                🥇 Leaderboard
+                <button class="refresh-btn">Refresh</button>
+            </div>
+            <div id="leaderboard-container" class="flex-1 overflow-x-auto table-wrapper">
+                <table class="min-w-full bg-white border border-gray-200 data-table">
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="py-2 px-4 border-b text-left">Rank</th>
+                            <th class="py-2 px-4 border-b text-left">Username</th>
+                            <th class="py-2 px-4 border-b text-right">Score</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboard-body">
+                        <tr><td colspan="3" class="text-center py-4 empty-state">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Tile 4: Graph -->
+        <div class="tile">
+            <div class="tile-header">
+                📈 Usage Graph
+                <span class="text-xs text-gray-500 tile-subtext">Coming soon</span>
+            </div>
+            <div class="placeholder-content">
+                <div>
+                    <svg class="w-12 h-12 mx-auto mb-2 placeholder-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path>
+                    </svg>
+                    <p>Usage graph will appear here</p>
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
 
-<script>
+<!-- Modular Logic Imports -->
+<script type="module">
+    import { initLeaderboard } from './logic/leaderboard.js';
+    import { initChallenges } from './logic/challenges.js';
+    import { initDailyActivity } from './logic/daily-activity.js';
+    import { initUsageGraph } from './logic/usage-graph.js';
+
     // --- Configuration ---
-    let supabaseUrl = "https://bwkkobxbsfxlykhvhyiu.supabase.co"
-    let supabaseKey = "sb_publishable_n3rZvLIFB23tn9teqoOc0A_tbmjl94r"
-    let supabaseClient = null;
-
+    const supabaseUrl = "https://bwkkobxbsfxlykhvhyiu.supabase.co";
+    const supabaseKey = "sb_publishable_n3rZvLIFB23tn9teqoOc0A_tbmjl94r";
+    
     // Initialize Supabase
-    supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
-    fetchAndUpdateLeaderboard();
-    fetchAndUpdateChallenges();
-
-    async function fetchAndUpdateLeaderboard(){
-        updateLeaderboard(await fetchLeaderboard())
-    }
-
-    async function fetchLeaderboard() {
-        if (!supabaseClient) return;
-
-        try {
-            // Fetch users ordered by score descending
-            const { data, error } = await supabaseClient
-                .from('Participants')
-                .select('*')
-                .order('score', { ascending: false });
-
-            if (error) throw error;
-
-            return data
-
-        } catch (err) {
-            console.error(err);
-            return
-        }
-    }
-
-    function updateLeaderboard(leaderboard){
-        const tbody = document.getElementById('leaderboard-body');
-
-        if (!leaderboard){
-            tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-gray-500">Could not retrieve data.</td></tr>';
-            return;
-        }
-        if (leaderboard.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-gray-500">No users found yet.</td></tr>';
-            return;
-        }
-
-        tbody.innerHTML = '';
-
-        leaderboard.forEach((house, index) => {
-            const row = `
-                <tr class="hover:bg-gray-50">
-                    <td class="py-2 px-4 border-b font-bold">${index + 1}</td>
-                    <td class="py-2 px-4 border-b">${house.house_name}</td>
-                    <td class="py-2 px-4 border-b text-right font-mono">${house.score}</td>
-                </tr>
-            `;
-            tbody.innerHTML += row;
-        });
-        
-    }
-
-    async function fetchAndUpdateChallenges(){
-        updateChallenges(await fetchChallenges())
-    }
-
-    async function fetchChallenges(){
-        if (!supabaseClient) return;
-
-        try {
-            const { data, error} = await supabaseClient.from("Challenges").select("*")
-            return data
-        } catch (err) {
-            console.err(err)
-            return
-        }
-    }
-
-    function updateChallenges(challenges){
-        const challengeList = document.getElementById("challenges-list")
-
-        if (!challenges){
-            challengeList.innerHTML = '<li>Fetching of challenges failed</li>'
-        }
-        if (challenges.length === 0){
-            challengeList.innerHTML = '<li>No challenges yet</li>'
-        }
-        challengeList.innerHTML = ''
-        challenges.forEach((challenge, index) => {
-            const card = `
-                <li class="border border-gray-200 rounded bg-white overflow-hidden">
-                    <div class="p-4">
-                        <div class="font-medium text-lg mb-1">${challenge.title}</div>
-                        <div class="font-italic text-xs text-gray-800"><i>running from ${challenge.start} to ${challenge.end}</i></div>
-                        <div class="text-gray-600 text-sm">${challenge.description}</div>
-                    </div>
-                </li>
-            `
-            challengeList.innerHTML += card
-        })
-    }
-
+    const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+    
+    // Load data on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        initLeaderboard(supabaseClient);
+        initChallenges(supabaseClient);
+        initDailyActivity();
+        initUsageGraph();
+    });
 </script>
 
 </body>
