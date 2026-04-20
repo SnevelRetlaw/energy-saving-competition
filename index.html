@@ -30,7 +30,7 @@
         <!-- Tile 1: Daily Activity -->
         <div class="tile">
             <div class="tile-header">
-                📊 Daily Activity
+                📊 Daily Energy Insight
                 <span class="text-xs text-gray-500 tile-subtext">Coming soon</span>
             </div>
             <div class="placeholder-content">
@@ -101,7 +101,7 @@
 <script type="module">
     import { initLeaderboard } from './logic/leaderboard.js';
     import { initChallenges } from './logic/challenges.js';
-    import { initDailyActivity } from './logic/daily-activity.js';
+    import { initDailyEnergyInsight } from './logic/daily-energy-insight.js';
     import { initUsageGraph } from './logic/usage-graph.js';
 
     // --- Configuration ---
@@ -115,7 +115,7 @@
     document.addEventListener('DOMContentLoaded', () => {
         initLeaderboard(supabaseClient);
         initChallenges(supabaseClient);
-        initDailyActivity();
+        initDailyEnergyInsight();
         initUsageGraph();
     });
 </script>
