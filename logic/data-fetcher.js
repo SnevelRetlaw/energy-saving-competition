@@ -17,13 +17,18 @@ export async function fetchLeaderboardData(supabaseClient) {
 export async function fetchChallengesData(supabaseClient) {
     if (!supabaseClient) throw new Error("Missing Supabase client");
 
-    const { data, error } = await supabaseClient
-        .from('Challenges')
-        .select('*')
-        .order('start', { ascending: false });
+    try {
+        const { data, error } = await supabaseClient
+            .from('Challenges')
+            .select('*')
+            .order('start', { ascending: false });
 
-    if (error) throw error;
-    return data;
+        return data
+    } catch (err){
+        console.error("Fetching challenges failed:", err)
+        return null
+    }
+
 }
 
 export async function fetchInsightsData(supabaseClient) {

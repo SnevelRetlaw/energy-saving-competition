@@ -1,29 +1,20 @@
+import { fetchChallengesData } from "./data-fetcher.js";
+
 export function initChallenges(supabaseClient) {
     if (!supabaseClient) {
         console.error("Supabase client not initialized for challenges");
         return;
     }
 
-    const btn = document.querySelector('.tile-header button[onclick*="Challenges"]');
-    if (btn) {
-        btn.addEventListener('click', () => fetchAndUpdateChallenges(supabaseClient));
+    const refreshBtn = document.getElementById('challenges-refresh-button')
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => fetchAndRenderChallenges(supabaseClient));
     }
 
-    fetchAndUpdateChallenges(supabaseClient);
+    fetchAndRenderChallenges(supabaseClient);
 }
 
-async function fetchChallengesData(supabaseClient) {
-    try {
-        const { data, error } = await supabaseClient.from("Challenges").select("*");
-        if (error) throw error;
-        return data;
-    } catch (err) {
-        console.error("Error fetching challenges:", err);
-        return null;
-    }
-}
-
-async function fetchAndUpdateChallenges(supabaseClient) {
+async function fetchAndRenderChallenges(supabaseClient) {
     const data = await fetchChallengesData(supabaseClient);
     renderChallenges(data);
 }
