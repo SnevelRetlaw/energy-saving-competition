@@ -12,8 +12,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="styles.css">
     <style>
-        /* Keep any inline styles that aren't in styles.css if necessary, 
-           though most should be moved to styles.css for consistency */
+        /* Keep any inline styles that aren't in styles.css if necessary */
         body { font-family: sans-serif; background-color: #f3f4f6; }
         .loader { border-top-color: #3498db; -webkit-animation: spinner 1.5s linear infinite; animation: spinner 1.5s linear infinite; }
         @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -21,84 +20,116 @@
 </head>
 <body class="p-4 md:p-8">
 
+<!-- Login Overlay -->
+<div id="login-overlay" class="login-overlay">
+    <div class="login-modal">
+        <div class="login-header">🔐 House Login</div>
+        <form id="login-form" onsubmit="window.handleLoginSubmit(event)">
+            <div class="login-form-group">
+                <label for="login-email" class="login-label">House Email</label>
+                <input type="email" id="login-email" class="login-input" placeholder="house@example.com" required>
+            </div>
+            <div class="login-form-group">
+                <label for="login-password" class="login-label">Password</label>
+                <input type="password" id="login-password" class="login-input" placeholder="••••••••" required>
+            </div>
+            <div id="login-error" class="error-message"></div>
+            <button type="submit" class="login-btn">Log In</button>
+        </form>
+        <p class="text-xs text-gray-500 mt-4 text-center">
+            No self-registration available.<br>Contact admin for credentials.
+        </p>
+    </div>
+</div>
+
 <div class="max-w-7xl mx-auto dashboard-container">
-    <h1 class="text-3xl font-bold mb-6 text-gray-800 page-title">🏆 Challenge Dashboard</h1>
+    <!-- User Info Bar (Visible only when logged in) -->
+    <div id="user-info-bar" class="user-info-bar">
+        <span>Welcome, <strong id="user-email-display">User</strong></span>
+        <button onclick="window.handleLogoutClick()" class="logout-btn">Log Out</button>
+    </div>
 
-    <!-- Dashboard Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 dashboard-grid">
-        
-        <!-- Tile 1: Daily Activity -->
-        <div class="tile">
-            <div class="tile-header">
-                📊 Daily Energy Insight
-                <span class="text-xs text-gray-500 tile-subtext">Coming soon</span>
-            </div>
-            <div class="placeholder-content">
-                <div>
-                    <svg class="w-12 h-12 mx-auto mb-2 placeholder-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                    </svg>
-                    <p>Daily activity metrics will appear here</p>
+    <!-- Dashboard Content (Hidden until logged in) -->
+    <div id="dashboard-content" style="display: none;">
+        <h1 class="text-3xl font-bold mb-6 text-gray-800 page-title">🏆 Challenge Dashboard</h1>
+
+        <!-- Dashboard Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 dashboard-grid">
+            
+            <!-- Tile 1: Daily Activity -->
+            <div class="tile">
+                <div class="tile-header">
+                    📊 Daily Energy Insight
+                    <span class="text-xs text-gray-500 tile-subtext">Coming soon</span>
+                </div>
+                <div class="placeholder-content">
+                    <div>
+                        <svg class="w-12 h-12 mx-auto mb-2 placeholder-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                        <p>Daily activity metrics will appear here</p>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Tile 2: Challenges -->
-        <div class="tile">
-            <div class="tile-header">
-                🎯 Challenges
-                <button class="refresh-btn">Refresh</button>
-            </div>
-            <div id="challenges-container" class="flex-1 overflow-y-auto table-wrapper">
-                <ul id="challenges-list" class="challenge-list">
-                    <li class="text-center py-4 empty-state">Loading...</li>
-                </ul>
-            </div>
-        </div>
-
-        <!-- Tile 3: Leaderboards -->
-        <div class="tile">
-            <div class="tile-header">
-                🥇 Leaderboard
-                <button class="refresh-btn">Refresh</button>
-            </div>
-            <div id="leaderboard-container" class="flex-1 overflow-x-auto table-wrapper">
-                <table class="min-w-full bg-white border border-gray-200 data-table">
-                    <thead>
-                        <tr class="bg-gray-100">
-                            <th class="py-2 px-4 border-b text-left">Rank</th>
-                            <th class="py-2 px-4 border-b text-left">Username</th>
-                            <th class="py-2 px-4 border-b text-right">Score</th>
-                        </tr>
-                    </thead>
-                    <tbody id="leaderboard-body">
-                        <tr><td colspan="3" class="text-center py-4 empty-state">Loading...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- Tile 4: Graph -->
-        <div class="tile">
-            <div class="tile-header">
-                📈 Usage Graph
-                <span class="text-xs text-gray-500 tile-subtext">Coming soon</span>
-            </div>
-            <div class="placeholder-content">
-                <div>
-                    <svg class="w-12 h-12 mx-auto mb-2 placeholder-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path>
-                    </svg>
-                    <p>Usage graph will appear here</p>
+            <!-- Tile 2: Challenges -->
+            <div class="tile">
+                <div class="tile-header">
+                    🎯 Challenges
+                    <button class="refresh-btn">Refresh</button>
+                </div>
+                <div id="challenges-container" class="flex-1 overflow-y-auto table-wrapper">
+                    <ul id="challenges-list" class="challenge-list">
+                        <li class="text-center py-4 empty-state">Loading...</li>
+                    </ul>
                 </div>
             </div>
-        </div>
 
+            <!-- Tile 3: Leaderboards -->
+            <div class="tile">
+                <div class="tile-header">
+                    🥇 Leaderboard
+                    <button class="refresh-btn">Refresh</button>
+                </div>
+                <div id="leaderboard-container" class="flex-1 overflow-x-auto table-wrapper">
+                    <table class="min-w-full bg-white border border-gray-200 data-table">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="py-2 px-4 border-b text-left">Rank</th>
+                                <th class="py-2 px-4 border-b text-left">Username</th>
+                                <th class="py-2 px-4 border-b text-right">Score</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboard-body">
+                            <tr><td colspan="3" class="text-center py-4 empty-state">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Tile 4: Graph -->
+            <div class="tile">
+                <div class="tile-header">
+                    📈 Usage Graph
+                    <span class="text-xs text-gray-500 tile-subtext">Coming soon</span>
+                </div>
+                <div class="placeholder-content">
+                    <div>
+                        <svg class="w-12 h-12 mx-auto mb-2 placeholder-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path>
+                        </svg>
+                        <p>Usage graph will appear here</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
     </div>
 </div>
 
 <!-- Modular Logic Imports -->
 <script type="module">
+    import { initAuth } from './logic/auth.js';
     import { initLeaderboard } from './logic/leaderboard.js';
     import { initChallenges } from './logic/challenges.js';
     import { initDailyEnergyInsight } from './logic/daily-energy-insight.js';
@@ -111,8 +142,12 @@
     // Initialize Supabase
     const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
     
-    // Load data on page load
+    // Initialize Auth FIRST
+    initAuth(supabaseClient);
+    
+    // Load data on page load (only works if logged in, but safe to call)
     document.addEventListener('DOMContentLoaded', () => {
+        // These modules should ideally check auth state internally or receive the user context
         initLeaderboard(supabaseClient);
         initChallenges(supabaseClient);
         initDailyEnergyInsight(supabaseClient);

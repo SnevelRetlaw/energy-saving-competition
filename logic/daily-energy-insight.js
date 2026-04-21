@@ -25,8 +25,6 @@ async function fetchDailyEnergyInsight(client) {
             renderError(tile, error.message);
             return;
         }
-
-        console.log(data)
         
         if (!data || data.length === 0) {
             renderEmptyState(tile);
