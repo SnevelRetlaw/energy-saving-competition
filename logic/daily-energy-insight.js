@@ -1,54 +1,30 @@
-export function initDailyEnergyInsight(supabaseClient) {
-    console.log("Daily Energy Insight module initialized");
-    
-    if (supabaseClient) {
-        fetchDailyEnergyInsight(supabaseClient);
-    }
-}
+import { fetchInsightsData } from "./data-fetcher.js";
 
-async function fetchDailyEnergyInsight(client) {
-    const tile = document.querySelector('.dashboard-grid > .tile:first-child');
-    
-    if (!tile) {
-        console.error("Daily Energy Insight tile not found");
+export function initDailyEnergyInsight(supabaseClient) {    
+    if (!supabaseClient) {
+        console.error("Supabase client not initialized for Daily Energy insight");
         return;
     }
-    
-    try {
-        // Fetch the current daily insight (not completed)
-        const { data, error } = await client
-            .from('Daily energy insight')
-            .select('*');
-        
-        if (error) {
-            console.error("Error fetching daily energy insight:", error);
-            renderError(tile, error.message);
-            return;
-        }
-        
-        if (!data || data.length === 0) {
-            renderEmptyState(tile);
-            return;
-        }
-        
-        const energyInsight = data[0];
-        renderEnergyInsight(energyInsight, tile);
-        
-    } catch (err) {
-        console.error("Unexpected error:", err);
-        renderError(tile, "Failed to load energyInsight");
+
+    const refreshBtn = document.getElementById('dei-refresh-button')
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => fetchAndRenderDailyEnergyInsight(supabaseClient));
     }
+
+    fetchAndRenderDailyEnergyInsight(supabaseClient);
 }
 
-function renderEnergyInsight(energyInsight, container) {
-    // Remove placeholder content
-    const placeholder = container.querySelector('.placeholder-content');
-    if (placeholder) placeholder.remove();
+async function fetchAndRenderDailyEnergyInsight(supabaseClient){
+    const data = await fetchInsightsData(supabaseClient)
+    renderEnergyInsight(data[0])
+}
+
+function renderEnergyInsight(energyInsight) {
+
+    const deiContent = document.getElementById('daily-energy-insight-content')
     
-    // Create energyInsight content
-    const content = document.createElement('div');
-    content.className = 'energy-insight-content';
-    content.innerHTML = `
+    deiContent.className = 'energy-insight-content';
+    deiContent.innerHTML = `
         <div class="energy-insight-header">
             <h3 class="energy-insight-title">${escapeHtml(energyInsight.title)}</h3>
             <span class="energy-insight-date">${formatDate(energyInsight.date)}</span>
@@ -63,8 +39,6 @@ function renderEnergyInsight(energyInsight, container) {
             <span class="score-value">${energyInsight.score}</span>
         </div>
     `;
-    
-    container.appendChild(content);
 }
 
 function renderQuiz(quiz) {
@@ -101,18 +75,6 @@ function renderEmptyState(container) {
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
                 </svg>
                 <p>No daily energy-insight available today</p>
-            </div>
-        `;
-    }
-}
-
-function renderError(container, message) {
-    const placeholder = container.querySelector('.placeholder-content');
-    if (placeholder) {
-        placeholder.innerHTML = `
-            <div class="error-state">
-                <p>⚠️ Error loading energy-insight</p>
-                <small>${escapeHtml(message)}</small>
             </div>
         `;
     }

@@ -34,13 +34,17 @@ export async function fetchChallengesData(supabaseClient) {
 export async function fetchInsightsData(supabaseClient) {
     if (!supabaseClient) throw new Error("Missing Supabase client");
 
-    const { data, error } = await supabaseClient
-        .from('Daily energy insight')
-        .select('*')
-        .order('date', { ascending: false });
+    try{
+        const { data, error } = await supabaseClient
+            .from('Daily energy insight')
+            .select('*')
+            .order('date', { ascending: false });
 
-    if (error) throw error;
-    return data;
+        return data
+    } catch (err){
+        console.error("Fetching Daily Energy Insight failed:", err)
+        return null
+    }
 }
 
 export async function fetchUsageGraphData(supabaseClient) {
