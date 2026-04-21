@@ -14,7 +14,7 @@ export function initChallenges(supabaseClient) {
     fetchAndRenderChallenges(supabaseClient);
 }
 
-async function fetchAndRenderChallenges(supabaseClient) {
+export async function fetchAndRenderChallenges(supabaseClient) {
     const data = await fetchChallengesData(supabaseClient);
     renderChallenges(data);
 }

@@ -8,7 +8,7 @@ export function initUsageGraph(supabaseClient) {
     fetchAndRenderGraph(supabaseClient);
 }
 
-async function fetchAndRenderGraph(supabaseClient) {
+export async function fetchAndRenderGraph(supabaseClient) {
     const data = await fetchUsageGraphData(supabaseClient);
     renderGraph(data);
 }

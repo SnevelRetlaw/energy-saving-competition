@@ -142,17 +142,7 @@
     // Initialize Supabase
     const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
     
-    // Initialize Auth FIRST
     initAuth(supabaseClient);
-    
-    // Load data on page load (only works if logged in, but safe to call)
-    document.addEventListener('DOMContentLoaded', () => {
-        // These modules should ideally check auth state internally or receive the user context
-        initLeaderboard(supabaseClient);
-        initChallenges(supabaseClient);
-        initDailyEnergyInsight(supabaseClient);
-        initUsageGraph(supabaseClient);
-    });
 </script>
 
 </body>

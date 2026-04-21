@@ -1,3 +1,9 @@
+import { fetchDashboardData } from "./data-fetcher.js";
+import { fetchAndRenderChallenges } from "./challenges.js";
+import { fetchAndRenderDailyEnergyInsight } from "./daily-energy-insight.js";
+import { fetchAndRenderLeaderboard } from "./leaderboard.js";
+import { fetchAndRenderGraph } from "./usage-graph.js";
+
 let supabaseClient = null;
 let currentUser = null;
 
@@ -126,7 +132,7 @@ function showLogin() {
     document.getElementById('user-info-bar').classList.remove('active');
 }
 
-function showDashboard() {
+async function showDashboard() {
     document.getElementById('login-overlay').classList.remove('active');
     document.getElementById('dashboard-content').style.display = 'block';
     
@@ -137,6 +143,12 @@ function showDashboard() {
     if (currentUser && userEmailSpan) {
         userEmailSpan.textContent = currentUser.email;
         userInfoBar.classList.add('active');
+
+
+        await fetchAndRenderChallenges(supabaseClient)
+        await fetchAndRenderDailyEnergyInsight(supabaseClient)
+        await fetchAndRenderGraph(supabaseClient)
+        await fetchAndRenderLeaderboard(supabaseClient)
     }
 }
 

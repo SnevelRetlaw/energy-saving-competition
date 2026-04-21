@@ -17,7 +17,7 @@ export function initLeaderboard(supabaseClient) {
     fetchAndRenderLeaderboard(supabaseClient);
 }
 
-async function fetchAndRenderLeaderboard(supabaseClient) {
+export async function fetchAndRenderLeaderboard(supabaseClient) {
     const data = await fetchLeaderboardData(supabaseClient);
     renderLeaderboard(data);
 }

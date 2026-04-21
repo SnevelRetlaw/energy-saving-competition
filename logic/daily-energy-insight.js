@@ -14,7 +14,7 @@ export function initDailyEnergyInsight(supabaseClient) {
     fetchAndRenderDailyEnergyInsight(supabaseClient);
 }
 
-async function fetchAndRenderDailyEnergyInsight(supabaseClient){
+export async function fetchAndRenderDailyEnergyInsight(supabaseClient){
     const data = await fetchInsightsData(supabaseClient)
     renderEnergyInsight(data[0])
 }
