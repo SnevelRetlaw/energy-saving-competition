@@ -18,6 +18,7 @@ export function initAuth(client) {
             showDashboard();
         } else if (event === 'SIGNED_OUT') {
             currentUser = null;
+            flushData();
             showLogin();
         }
     });
@@ -79,7 +80,41 @@ export async function handleLogin(email, password) {
 export async function handleLogout() {
     await supabaseClient.auth.signOut();
     currentUser = null;
+    flushData();
     showLogin();
+}
+
+function flushData() {
+    currentUser = null;
+
+    const challengesList = document.getElementById('challenges-list');
+    const leaderboardBody = document.getElementById('leaderboard-body');
+    const dailyEnergyInsight = document.getElementById('daily-energy-insight-content')
+    const usageGraphContent = document.getElementById('usage-graph-content')
+
+
+    if (challengesList) {
+        challengesList.innerHTML = '<li class="text-center py-4 empty-state">Loading...</li>';
+    }
+
+    if (leaderboardBody) {
+        leaderboardBody.innerHTML = '<tr><td colspan="3" class="text-center py-4 empty-state">Loading...</td></tr>';
+    }
+
+    if (dailyEnergyInsight) {
+        console.log("Clearing DEI")
+        dailyEnergyInsight.innerHTML = '<div class="text-center py-4 empty-state">Loading...<div>'
+    } else {
+        console.log("skipping clearing DEI")
+    }
+
+    if (usageGraphContent) {
+        usageGraphContent.innerHTML = '<div class="text-center py-4 empty-state">Loading...<div>'
+    }
+
+    // Optionally clear any other dynamic content or cached data here
+    // For example, if you store data in localStorage:
+    // localStorage.clear();
 }
 
 /**
