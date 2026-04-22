@@ -31,7 +31,7 @@ export async function fetchLeaderboardData(supabaseClient) {
 
 // }
 
-export async function fetchChallengesData(supabaseClient) {
+export async function fetchActiveChallengeData(supabaseClient) {
     if (!supabaseClient) throw new Error("Missing Supabase client");
 
     const today = new Date().toISOString().split('T')[0]
@@ -85,7 +85,7 @@ export async function fetchDashboardData(supabaseClient) {
         // 2. Run all fetches in parallel
         const [leaderboard, challenges, insights, usageData] = await Promise.all([
             fetchLeaderboardData(supabaseClient),
-            fetchChallengesData(supabaseClient),
+            fetchActiveChallengeData(supabaseClient),
             fetchInsightsData(supabaseClient),
             fetchUsageGraphData(supabaseClient)
         ]);

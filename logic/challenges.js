@@ -1,4 +1,4 @@
-import { fetchChallengesData } from "./data-fetcher.js";
+import { fetchActiveChallengeData } from "./data-fetcher.js";
 
 export function initChallenges(supabaseClient) {
     if (!supabaseClient) {
@@ -15,7 +15,7 @@ export function initChallenges(supabaseClient) {
 }
 
 export async function fetchAndRenderChallenges(supabaseClient) {
-    const data = await fetchChallengesData(supabaseClient);
+    const data = await fetchActiveChallengeData(supabaseClient);
     renderChallenge(data);
 }
 
