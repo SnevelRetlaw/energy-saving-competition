@@ -130,16 +130,9 @@
 <!-- Modular Logic Imports -->
 <script type="module">
     import { initAuth } from './logic/auth.js';
-    import { initLeaderboard } from './logic/leaderboard.js';
-    import { initChallenges } from './logic/challenges.js';
-    import { initDailyEnergyInsight } from './logic/daily-energy-insight.js';
-    import { initUsageGraph } from './logic/usage-graph.js';
 
-    // --- Configuration ---
     const supabaseUrl = "https://bwkkobxbsfxlykhvhyiu.supabase.co";
     const supabaseKey = "sb_publishable_n3rZvLIFB23tn9teqoOc0A_tbmjl94r";
-    
-    // Initialize Supabase
     const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
     
     initAuth(supabaseClient);
