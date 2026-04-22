@@ -72,10 +72,10 @@
                 </div>
             </div>
 
-            <!-- Tile 2: Challenges -->
-            <div class="tile">
+            <!-- Tile 2: Current Challenge -->
+            <div class="tile" id="challenge-tile">
                 <div class="tile-header">
-                    🎯 Challenges
+                    🎯 Current Challenge
                     <button id="challenges-refresh-button" class="refresh-btn">Refresh</button>
                 </div>
                 <div id="challenges-container" class="flex-1 overflow-y-auto table-wrapper">
@@ -83,6 +83,9 @@
                         <li class="text-center py-4 empty-state">Loading...</li>
                     </ul>
                 </div>
+                <button id="show-more-btn" class="show-more-btn w-full bg-blue-50 text-blue-600 hover:bg-blue-100 font-medium py-2 px-4 rounded transition-colors text-sm">
+                    Show More Details
+                </button>
             </div>
 
             <!-- Tile 3: Leaderboards -->
@@ -123,6 +126,30 @@
                 </div>
             </div>
 
+        </div>
+    </div>
+</div>
+
+<!-- Challenge Detail View (Hidden by default) -->
+<div id="challenge-detail-view" class="detail-view">
+    <div class="max-w-4xl mx-auto p-6">
+        <button id="challenges-back-btn" class="mb-6 flex items-center text-blue-600 hover:text-blue-800 font-medium">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            Back to Dashboard
+        </button>
+        
+        <div id="detail-content" class="bg-white rounded-lg shadow-lg p-8">
+            <div class="animate-pulse">
+                <div class="h-8 bg-gray-200 rounded w-3/4 mb-4"></div>
+                <div class="h-4 bg-gray-200 rounded w-1/2 mb-6"></div>
+                <div class="space-y-3">
+                    <div class="h-4 bg-gray-200 rounded"></div>
+                    <div class="h-4 bg-gray-200 rounded"></div>
+                    <div class="h-4 bg-gray-200 rounded"></div>
+                </div>
+            </div>
         </div>
     </div>
 </div>

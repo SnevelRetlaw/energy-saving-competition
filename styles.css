@@ -462,3 +462,20 @@ body {
     font-weight: 600;
     text-decoration: underline;
 }
+
+/* Challenge detail view */
+.detail-view {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #f3f4f6;
+    z-index: 50;
+    transform: translateX(100%);
+    transition: transform 0.3s ease-in-out;
+    overflow-y: auto;
+}
+.detail-view.active {
+    transform: translateX(0);
+}

@@ -9,7 +9,7 @@ export async function fetchLeaderboardData(supabaseClient) {
 
         return data;
     } catch (err) {
-        console.log("Fetching leaderboard failed:", err)
+        console.error("Fetching leaderboard failed:", err)
         return null;
     }
 }
@@ -46,8 +46,6 @@ export async function fetchActiveChallengeData(supabaseClient) {
             .limit(1);
 
         if (error) throw error;
-
-        console.log(data)
 
         return data.length > 0 ? data[0] : null;
     } catch (err) {

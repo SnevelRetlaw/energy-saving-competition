@@ -9,8 +9,6 @@ export function initLeaderboard(supabaseClient) {
 
     if (refreshBtn) {
         refreshBtn.addEventListener('click', () => fetchAndRenderLeaderboard(supabaseClient));
-    } else {
-        console.log("No refresh button")
     }
 
     // Initial load

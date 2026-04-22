@@ -108,10 +108,7 @@ function flushData() {
     }
 
     if (dailyEnergyInsight) {
-        console.log("Clearing DEI")
         dailyEnergyInsight.innerHTML = '<div class="text-center py-4 empty-state">Loading...<div>'
-    } else {
-        console.log("skipping clearing DEI")
     }
 
     if (usageGraphContent) {
