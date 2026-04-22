@@ -16,25 +16,23 @@ export function initChallenges(supabaseClient) {
 
 export async function fetchAndRenderChallenges(supabaseClient) {
     const data = await fetchChallengesData(supabaseClient);
-    renderChallenges(data);
+    renderChallenge(data);
 }
 
-function renderChallenges(challenges) {
+function renderChallenge(challenge) {
     const challengeList = document.getElementById("challenges-list");
     if (!challengeList) return;
 
-    if (!challenges) {
+    if (!challenge) {
         challengeList.innerHTML = '<li class="text-center py-4 text-gray-500">Fetching challenges failed</li>';
         return;
     }
-    if (challenges.length === 0) {
+    if (challenge.length === 0) {
         challengeList.innerHTML = '<li class="text-center py-4 text-gray-500">No challenges yet</li>';
         return;
     }
     
-    challengeList.innerHTML = '';
-    challenges.forEach((challenge) => {
-        const card = `
+    challengeList.innerHTML =  `
             <li class="border border-gray-200 rounded bg-white overflow-hidden hover:shadow-md transition-shadow">
                 <div class="p-4">
                     <div class="font-medium text-lg mb-1">${challenge.title}</div>
@@ -45,6 +43,4 @@ function renderChallenges(challenges) {
                 </div>
             </li>
         `;
-        challengeList.innerHTML += card;
-    });
 }

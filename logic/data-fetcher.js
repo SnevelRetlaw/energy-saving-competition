@@ -14,21 +14,46 @@ export async function fetchLeaderboardData(supabaseClient) {
     }
 }
 
+// export async function fetchChallengesData(supabaseClient) {
+//     if (!supabaseClient) throw new Error("Missing Supabase client");
+
+//     try {
+//         const { data, error } = await supabaseClient
+//             .from('Challenges')
+//             .select('*')
+//             .order('start', { ascending: false });
+
+//         return data
+//     } catch (err){
+//         console.error("Fetching challenges failed:", err)
+//         return null
+//     }
+
+// }
+
 export async function fetchChallengesData(supabaseClient) {
     if (!supabaseClient) throw new Error("Missing Supabase client");
+
+    const today = new Date().toISOString().split('T')[0]
 
     try {
         const { data, error } = await supabaseClient
             .from('Challenges')
             .select('*')
-            .order('start', { ascending: false });
+            .lte('start', today)
+            .gte('end', today)
+            .order('start', { ascending: false })
+            .limit(1);
 
-        return data
-    } catch (err){
-        console.error("Fetching challenges failed:", err)
-        return null
+        if (error) throw error;
+
+        console.log(data)
+
+        return data.length > 0 ? data[0] : null;
+    } catch (err) {
+        console.error("Fetching challenges failed:", err);
+        return null;
     }
-
 }
 
 export async function fetchInsightsData(supabaseClient) {
