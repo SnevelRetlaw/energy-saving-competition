@@ -1,8 +1,8 @@
 import { fetchDashboardData } from "./data-fetcher.js";
-import { fetchAndRenderChallenges } from "./challenges.js";
-import { fetchAndRenderDailyEnergyInsight } from "./daily-energy-insight.js";
-import { fetchAndRenderLeaderboard } from "./leaderboard.js";
-import { fetchAndRenderGraph } from "./usage-graph.js";
+import { initChallenges } from "./challenges.js";
+import { initDailyEnergyInsight } from "./daily-energy-insight.js";
+import { initLeaderboard } from "./leaderboard.js";
+import { initUsageGraph } from "./usage-graph.js";
 
 let supabaseClient = null;
 let currentUser = null;
@@ -142,10 +142,10 @@ async function showDashboard() {
         userInfoBar.classList.add('active');
 
 
-        await fetchAndRenderChallenges(supabaseClient)
-        await fetchAndRenderDailyEnergyInsight(supabaseClient)
-        await fetchAndRenderGraph(supabaseClient)
-        await fetchAndRenderLeaderboard(supabaseClient)
+        await initChallenges(supabaseClient)
+        await initDailyEnergyInsight(supabaseClient)
+        await initUsageGraph(supabaseClient)
+        await initLeaderboard(supabaseClient)
     }
 }
 

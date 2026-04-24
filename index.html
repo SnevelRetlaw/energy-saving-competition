@@ -60,15 +60,12 @@
             <div class="tile">
                 <div class="tile-header">
                     📊 Daily Energy Insight
-                    <button id="dei-refresh-button" class="refresh-btn">Refresh</button>
                 </div>
                 <div id="daily-energy-insight-content" class="placeholder-content">
-                    <div>
-                        <svg class="w-12 h-12 mx-auto mb-2 placeholder-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                        </svg>
-                        <p>Daily activity metrics will appear here</p>
-                    </div>
+                    <p>Daily activity metrics will appear here</p>
+                </div>
+                <div class="text-right" style="margin-top: 1rem;">
+                    <button id="show-more-insight-btn" class="refresh-btn">Show More</button>
                 </div>
             </div>
 
@@ -76,7 +73,6 @@
             <div class="tile" id="challenge-tile">
                 <div class="tile-header">
                     🎯 Current Challenge
-                    <button id="challenges-refresh-button" class="refresh-btn">Refresh</button>
                 </div>
                 <div id="challenges-container" class="flex-1 overflow-y-auto table-wrapper">
                     <ul id="challenges-list" class="challenge-list">
@@ -134,25 +130,44 @@
 <div id="challenge-detail-view" class="detail-view">
     <div class="max-w-4xl mx-auto p-6">
         <button id="challenges-back-btn" class="mb-6 flex items-center text-blue-600 hover:text-blue-800 font-medium">
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-            </svg>
-            Back to Dashboard
+            ← Back to Dashboard
         </button>
         
         <div id="detail-content" class="bg-white rounded-lg shadow-lg p-8"></div>
     </div>
 </div>
 
+<div id="insight-detail-view" class="detail-view">
+    <div class="max-w-4xl mx-auto p-6">
+        <button id="insight-back-btn" class="mb-6 flex items-center text-blue-600 hover:text-blue-800 font-medium">
+            ← Back to Dashboard
+        </button>
+        
+        <div id="insight-detail-content" class="bg-white rounded-lg shadow-lg p-8"></div>
+    </div>
+</div>
+
+
 <!-- Modular Logic Imports -->
 <script type="module">
     import { initAuth } from './logic/auth.js';
+    import { openInsightDetailView, closeInsightDetailView } from './logic/daily-energy-insight.js'
 
     const supabaseUrl = "https://bwkkobxbsfxlykhvhyiu.supabase.co";
     const supabaseKey = "sb_publishable_n3rZvLIFB23tn9teqoOc0A_tbmjl94r";
     const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
     
     initAuth(supabaseClient);
+
+    const detailDeiBtn = document.getElementById('show-more-insight-btn')
+    if (detailDeiBtn) {
+        detailDeiBtn.addEventListener('click', () => openInsightDetailView());
+    }
+
+    const DeiBackBtn = document.getElementById('insight-back-btn')
+    if (DeiBackBtn) {
+        DeiBackBtn.addEventListener('click', () => closeInsightDetailView())
+    }
 </script>
 
 </body>

@@ -6,11 +6,6 @@ export function initChallenges(supabaseClient) {
         return;
     }
 
-    const refreshBtn = document.getElementById('challenges-refresh-button')
-    if (refreshBtn) {
-        refreshBtn.addEventListener('click', () => fetchAndRenderChallenges(supabaseClient));
-    }
-
     fetchAndRenderChallenges(supabaseClient);
 }
 
