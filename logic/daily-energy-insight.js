@@ -247,7 +247,7 @@ window.submitQuiz = async function(btn) {
         
         btn.textContent = "Submitted";
         
-        fetchAndRenderDailyEnergyInsight(supabaseClientGlob);
+        fetchAndRenderDetailedDEI(supabaseClientGlob);
         
     } catch (err) {
         console.error("Error submitting quiz:", err);
