@@ -1,6 +1,7 @@
 import { fetchInsightsData } from "./data-fetcher.js";
 
-let currentDEI = null
+let availableDEIs = []
+let currentDEIIndex = 0
 let supabaseClientGlob = null
 
 export async function initDailyEnergyInsight(supabaseClient) {    
@@ -10,30 +11,47 @@ export async function initDailyEnergyInsight(supabaseClient) {
     }
 
     supabaseClientGlob = supabaseClient
-
-    fetchAndRenderDailyEnergyInsight(supabaseClient);
+    await fetchAndRenderDailyEnergyInsight(supabaseClient);
 }
 
 export async function fetchAndRenderDailyEnergyInsight(supabaseClient){
     const data = await fetchInsightsData(supabaseClient)
-    if (data && data.length > 0){
-        currentDEI = data[0]
-        renderCompactInsight(data[0])
+    availableDEIs = data || []
+    currentDEIIndex = 0
+    if (availableDEIs.length > 0){
+        renderCompactInsight(availableDEIs[currentDEIIndex])
     } else {
         renderEmptyState()
     }
 }
 
 async function fetchAndRenderDetailedDEI(supabaseClient){
-        const data = await fetchInsightsData(supabaseClient)
-    if (data && data.length > 0){
-        currentDEI = data[0]
-        openInsightDetailView(data[0])
+    const data = await fetchInsightsData(supabaseClient)
+    availableDEIs = data || []
+    currentDEIIndex = 0
+    if (availableDEIs.length > 0){
+        openInsightDetailView(availableDEIs[currentDEIIndex])
     } else {
         renderEmptyState()
         closeInsightDetailView()
     }
 }
+
+function nextPage(){
+    currentDEIIndex = (currentDEIIndex + 1) % availableDEIs.length
+    openInsightDetailView(availableDEIs[currentDEIIndex])
+}
+window.handleInsightNavNext = async (direction) => {
+    await nextPage(direction);
+};
+
+function previousPage(){
+    currentDEIIndex = (currentDEIIndex - 1) % availableDEIs.length
+    openInsightDetailView(availableDEIs[currentDEIIndex])
+}
+window.handleInsightNavPrev = async (direction) => {
+    await previousPage(direction);
+};
 
 function renderCompactInsight(energyInsight) {
     const deiContent = document.getElementById('daily-energy-insight-content')
@@ -56,7 +74,10 @@ function renderCompactInsight(energyInsight) {
     `;
 }
 
-export function openInsightDetailView() {
+export function openInsightDetailView(currentDEI = null) {
+    if (!currentDEI){
+        currentDEI = availableDEIs[currentDEIIndex]
+    }
     if (!currentDEI) return;
 
     const detailView = document.getElementById('insight-detail-view');
@@ -66,7 +87,12 @@ export function openInsightDetailView() {
 
     let html = `
         <div class="animate-fade-in">
-            <h2 class="text-3xl font-bold text-gray-800 mb-4">${escapeHtml(currentDEI.title)}</h2>
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-3xl font-bold text-gray-800">${escapeHtml(currentDEI.title)}</h2>
+                <span class="text-sm text-gray-500">
+                    ${currentDEIIndex + 1} of ${availableDEIs.length}
+                </span>
+            </div>
             
             <div class="flex items-center gap-4 mb-6">
                 <span class="bg-blue-100 text-blue-800 text-sm font-bold px-3 py-1 rounded-full">
@@ -87,7 +113,7 @@ export function openInsightDetailView() {
         html += `
             <div class="mb-8">
                 <h3 class="text-lg font-semibold text-gray-700 mb-3">Knowledge Check</h3>
-                ${renderQuiz(currentDEI.quiz)}
+                ${renderQuiz(currentDEI)}
             </div>
         `;
     }
@@ -103,6 +129,19 @@ export function openInsightDetailView() {
         `;
     }
 
+    if (availableDEIs.length > 1) {
+        html += `
+            <div class="flex justify-between mt-8 pt-6 border-t">
+                <button onclick="window.handleInsightNavPrev()" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 ${currentDEIIndex === 0 ? 'opacity-50 cursor-not-allowed' : ''}">
+                    ← Previous
+                </button>
+                <button onclick="window.handleInsightNavNext()" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 ${currentDEIIndex === availableDEIs.length - 1 ? 'opacity-50 cursor-not-allowed' : ''}">
+                    Next →
+                </button>
+            </div>
+        `;
+    }
+
     html += `</div>`;
 
     contentArea.innerHTML = html;
@@ -111,7 +150,8 @@ export function openInsightDetailView() {
     detailView.classList.add('active');
 }
 
-function renderQuiz(quiz) {
+function renderQuiz(currentDEI) {
+    let quiz = currentDEI.quiz
     const question = escapeHtml(quiz.question || '');
     const correctKey = quiz.correct_answer;
     const givenAnswer = currentDEI.given_answer;
@@ -218,6 +258,7 @@ function formatDate(dateStr) {
 
 // Expose submitQuiz globally for the quiz button
 window.submitQuiz = async function(btn) {
+    const currentDEI = availableDEIs[currentDEIIndex]
     const quizSection = btn.closest('.quiz-section');
     const selected = document.querySelector('input[name="quiz-answer"]:checked');
     
@@ -238,14 +279,11 @@ window.submitQuiz = async function(btn) {
         const { error } = await supabaseClientGlob
             .from('Daily energy insight')
             .update({ 
-                given_answer: selected.value,
-                completed: true // Assuming answering completes it
+                given_answer: selected.value
             })
             .eq('id', currentDEI.id)
 
         if (error) throw error;
-        
-        btn.textContent = "Submitted";
         
         fetchAndRenderDetailedDEI(supabaseClientGlob);
         

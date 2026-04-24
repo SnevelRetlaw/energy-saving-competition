@@ -57,10 +57,13 @@ export async function fetchActiveChallengeData(supabaseClient) {
 export async function fetchInsightsData(supabaseClient) {
     if (!supabaseClient) throw new Error("Missing Supabase client");
 
+    const today = new Date().toISOString().split('T')[0];
+
     try{
         const { data, error } = await supabaseClient
             .from('Daily energy insight')
             .select('*')
+            .lte('date', today)
             .order('date', { ascending: false });
 
         return data
