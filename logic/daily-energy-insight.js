@@ -28,7 +28,6 @@ export async function fetchAndRenderDailyEnergyInsight(supabaseClient){
 async function fetchAndRenderDetailedDEI(supabaseClient){
     const data = await fetchInsightsData(supabaseClient)
     availableDEIs = data || []
-    currentDEIIndex = 0
     if (availableDEIs.length > 0){
         openInsightDetailView(availableDEIs[currentDEIIndex])
     } else {
@@ -284,7 +283,9 @@ window.submitQuiz = async function(btn) {
             .eq('id', currentDEI.id)
 
         if (error) throw error;
-        
+
+        await new Promise(r => setTimeout(r, 500));
+
         fetchAndRenderDetailedDEI(supabaseClientGlob);
         
     } catch (err) {
