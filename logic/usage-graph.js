@@ -71,7 +71,6 @@ async function loadInitialData() {
         
         usages.forEach(usage => {
             if (!usage.time) return;
-            console.log(usage)
 
             let timeObj = usage.time;
             let timeLabel = timeObj.split(/(\s+)/)[2].slice(0,-3)

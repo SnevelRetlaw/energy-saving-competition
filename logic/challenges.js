@@ -51,7 +51,6 @@ function renderChallenge(challenge) {
 }
 
 function openDetailView(challenge) {
-    // console.log(challenge)
     const detailView = document.getElementById('challenge-detail-view');
     const contentArea = document.getElementById('detail-content');
     
