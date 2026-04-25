@@ -73,32 +73,20 @@ export async function fetchInsightsData(supabaseClient) {
     }
 }
 
-export async function fetchUsageGraphData(supabaseClient) {
-    if (!supabaseClient) throw new Error("Missing Supabase client");
+export async function fetchUsageGraphData(supabaseClient, dateStr) {
+    if (!supabaseClient) throw new Error("Supabase client not initialized");
     
-    // TODO: Replace with actual query when energy consumption table is added
-    // Example: await supabaseClient.from('EnergyLogs').select('*').eq('house_id', houseId)...
-    return []; 
-}
-
-export async function fetchDashboardData(supabaseClient) {
     try {
-        // 2. Run all fetches in parallel
-        const [leaderboard, challenges, insights, usageData] = await Promise.all([
-            fetchLeaderboardData(supabaseClient),
-            fetchActiveChallengeData(supabaseClient),
-            fetchInsightsData(supabaseClient),
-            fetchUsageGraphData(supabaseClient)
-        ]);
+        const { data, error } = await supabaseClient
+            .from('Usage data')
+            .select('date, raw_elec_data, raw_gas_data')
+            .eq('date', dateStr)
+            .order('date', { ascending: true });
 
-        return {
-            leaderboard,
-            challenges,
-            insights,
-            usageData
-        };
+        if (error) throw error;
+        return data || [];
     } catch (err) {
-        console.error("Failed to fetch dashboard data:", err);
-        throw err;
+        console.error("Fetching usage data failed:", err);
+        return [];
     }
 }

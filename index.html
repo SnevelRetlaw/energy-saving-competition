@@ -10,6 +10,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link rel="stylesheet" href="styles.css">
     <style>
         /* Keep any inline styles that aren't in styles.css if necessary */
@@ -110,18 +111,22 @@
             <div class="tile">
                 <div class="tile-header">
                     📈 Usage Graph
-                    <span class="text-xs text-gray-500 tile-subtext">Coming soon</span>
                 </div>
-                <div id="usage-graph-content" class="placeholder-content">
-                    <div>
-                        <svg class="w-12 h-12 mx-auto mb-2 placeholder-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path>
-                        </svg>
-                        <p>Usage graph will appear here</p>
+                
+                <div class="graph-controls mb-4">
+                    <div class="control-group">
+                        <span class="control-label">Data Type:</span>
+                        <button id="graph-type-elec" class="control-btn active">Electricity</button>
+                        <button id="graph-type-gas" class="control-btn">Gas</button>
+                    </div>
+                </div>
+                
+                <div id="usage-graph-content" class="graph-container">
+                    <div class="placeholder-content">
+                        <p>Loading usage data...</p>
                     </div>
                 </div>
             </div>
-
         </div>
     </div>
 </div>

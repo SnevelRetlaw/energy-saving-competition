@@ -1,4 +1,3 @@
-import { fetchDashboardData } from "./data-fetcher.js";
 import { initChallenges } from "./challenges.js";
 import { initDailyEnergyInsight } from "./daily-energy-insight.js";
 import { initLeaderboard } from "./leaderboard.js";
