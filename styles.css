@@ -499,6 +499,8 @@ body {
 
 .control-group.navigation {
     justify-content: center;
+    align-items: center;
+    gap: 1rem;
 }
 
 .control-label {
@@ -532,6 +534,7 @@ body {
     border-color: #3b82f6;
 }
 
+/* Navigation Buttons */
 .nav-btn {
     width: 2rem;
     height: 2rem;
@@ -549,17 +552,25 @@ body {
     justify-content: center;
 }
 
-.nav-btn:hover {
+.nav-btn:hover:not(:disabled) {
     background-color: #f3f4f6;
     border-color: #9ca3af;
+}
+
+.nav-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: #f9fafb;
+    border-color: #e5e7eb;
 }
 
 .period-display {
     font-size: 0.875rem;
     font-weight: 500;
     color: #1f2937;
-    min-width: 150px;
+    min-width: 160px;
     text-align: center;
+    white-space: nowrap;
 }
 
 .graph-container {

@@ -73,15 +73,22 @@ export async function fetchInsightsData(supabaseClient) {
     }
 }
 
-export async function fetchUsageGraphData(supabaseClient, dateStr) {
+export async function fetchUsageGraphData(supabaseClient, startDate = null, endDate = null) {
     if (!supabaseClient) throw new Error("Supabase client not initialized");
     
     try {
-        const { data, error } = await supabaseClient
+        let query = supabaseClient
             .from('Usage data')
             .select('date, raw_elec_data, raw_gas_data')
-            .eq('date', dateStr)
             .order('date', { ascending: true });
+
+        if (startDate && endDate) {
+            query = query.gte('date', startDate).lte('date', endDate);
+        } else if (startDate) {
+            query = query.gte('date', startDate);
+        }
+
+        const { data, error } = await query;
 
         if (error) throw error;
         return data || [];

@@ -1,5 +1,8 @@
 import { fetchUsageGraphData } from './data-fetcher.js';
 
+let allUsageData = [];
+let availableDates = [];
+let currentDateIndex = 0;
 let currentChart = null;
 let currentDataType = 'electricity'; // 'electricity' or 'gas'
 let supabaseClientGlob = null;
@@ -10,7 +13,8 @@ export function initUsageGraph(supabaseClient) {
         return;
     }
     supabaseClientGlob = supabaseClient;
-    loadInitialData();
+
+    loadAllData();
     
     // Setup type switching
     const elecBtn = document.getElementById('graph-type-elec');
@@ -26,6 +30,65 @@ export function initUsageGraph(supabaseClient) {
         updateControlButtons(); 
         loadInitialData(); 
     };
+
+    setupNavigation();
+}
+
+function setupNavigation() {
+    const prevBtn = document.getElementById('graph-nav-prev');
+    const nextBtn = document.getElementById('graph-nav-next');
+    const dateDisplay = document.getElementById('graph-date-display');
+
+    if (prevBtn) {
+        prevBtn.onclick = () => navigateDate(-1);
+    }
+    if (nextBtn) {
+        nextBtn.onclick = () => navigateDate(1);
+    }
+}
+
+function navigateDate(direction) {
+    if (availableDates.length === 0) return;
+
+    const newIndex = currentDateIndex + direction;
+    
+    
+    if (newIndex < 0 || newIndex >= availableDates.length){
+        return;
+    }
+
+    currentDateIndex = newIndex;
+    updateNavigationUI();
+    renderCurrentDate();
+}
+
+function updateNavigationUI() {
+    const prevBtn = document.getElementById('graph-nav-prev');
+    const nextBtn = document.getElementById('graph-nav-next');
+    const dateDisplay = document.getElementById('graph-date-display');
+
+    if (prevBtn) {
+        prevBtn.disabled = currentDateIndex === 0;
+        prevBtn.classList.toggle('opacity-50', currentDateIndex === 0);
+        prevBtn.classList.toggle('cursor-not-allowed', currentDateIndex === 0);
+    }
+
+    if (nextBtn) {
+        nextBtn.disabled = currentDateIndex === availableDates.length - 1;
+        nextBtn.classList.toggle('opacity-50', currentDateIndex === availableDates.length - 1);
+        nextBtn.classList.toggle('cursor-not-allowed', currentDateIndex === availableDates.length - 1);
+    }
+
+    if (dateDisplay && availableDates.length > 0) {
+        const dateStr = availableDates[currentDateIndex];
+        const dateObj = new Date(dateStr);
+        dateDisplay.textContent = dateObj.toLocaleDateString('en-US', { 
+            weekday: 'short', 
+            day: 'numeric', 
+            month: 'short', 
+            year: 'numeric' 
+        });
+    }
 }
 
 function updateControlButtons() {
@@ -50,23 +113,44 @@ function parseDutchNumber(str) {
     return parseFloat(cleanStr) || 0.0;
 };
 
-async function loadInitialData() {
-    // Calculate yesterday's date
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 2);
-    const dateStr = formatDate(yesterday);
-
-    // Fetch data for yesterday only
-    const rawData = await fetchUsageGraphData(supabaseClientGlob, dateStr, dateStr);
+async function loadAllData() {
+    const rawData = await fetchUsageGraphData(supabaseClientGlob);
 
     if (!rawData || rawData.length === 0) {
-        updateEmptyState("No usage data available for yesterday.");
+        updateEmptyState("No usage data available in the system.");
+        return;
+    }
+
+    allUsageData = rawData;
+    
+    const dateSet = new Set(allUsageData.map(d => d.date));
+    availableDates = Array.from(dateSet).sort();
+
+    if (availableDates.length === 0) {
+        updateEmptyState("No valid dates found in data.");
+        return;
+    }
+
+    currentDateIndex = availableDates.length - 1;
+    
+    updateNavigationUI();
+    renderCurrentDate();
+}
+
+async function renderCurrentDate() {
+    if (availableDates.length === 0) return;
+
+    const targetDate = availableDates[currentDateIndex];
+    const targetDateData = allUsageData.filter(d => d.date === targetDate)
+
+    if (!targetDateData || targetDateData.length === 0) {
+        updateEmptyState(`No usage data available for ${targetDate}.`);
         return;
     }
     const labels = []; 
     const values = [];
 
-    rawData.forEach(row => {
+    targetDateData.forEach(row => {
         const usages = currentDataType === "electricity" ? row.raw_elec_data?.usages : row.raw_gas_data?.usages;
         
         usages.forEach(usage => {
@@ -95,14 +179,14 @@ async function loadInitialData() {
     });
 
     if (labels.length === 0) {
-        updateEmptyState("No data points found for yesterday.");
+        updateEmptyState(`No data points found for ${targetDate}.`);
         return;
     }
 
-    renderChart(labels, values, currentDataType);
+    renderChart(labels, values, currentDataType, targetDate);
 }
 
-function renderChart(labels, values, dataType) {
+function renderChart(labels, values, dataType, dateLabel) {
     const container = document.getElementById('usage-graph-content');
     if (!container) return;
 
@@ -128,7 +212,7 @@ function renderChart(labels, values, dataType) {
         data: {
             labels: labels,
             datasets: [{
-                label: label,
+                label: `${label} (${dateLabel})`,
                 data: values,
                 borderColor: color,
                 backgroundColor: isElectricity ? 'rgba(59, 130, 246, 0.1)' : 'rgba(34, 197, 94, 0.1)',
