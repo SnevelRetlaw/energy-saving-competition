@@ -2,9 +2,11 @@ import { fetchUsageGraphData } from './data-fetcher.js';
 
 let allUsageData = [];
 let availableDates = [];
+let availableMonths = [];
 let currentDateIndex = 0;
 let currentChart = null;
 let currentDataType = 'electricity'; // 'electricity' or 'gas'
+let currentViewMode = 'daily'; // 'daily' or 'monthly
 let supabaseClientGlob = null;
 
 export function initUsageGraph(supabaseClient) {
@@ -16,19 +18,38 @@ export function initUsageGraph(supabaseClient) {
 
     loadAllData();
     
-    // Setup type switching
     const elecBtn = document.getElementById('graph-type-elec');
     const gasBtn = document.getElementById('graph-type-gas');
 
     if (elecBtn) elecBtn.onclick = () => { 
         currentDataType = 'electricity'; 
         updateControlButtons(); 
-        loadInitialData(); 
+        loadAllData(); 
     };
     if (gasBtn) gasBtn.onclick = () => { 
         currentDataType = 'gas'; 
         updateControlButtons(); 
-        loadInitialData(); 
+        loadAllData(); 
+    };
+
+    const dailyBtn = document.getElementById('graph-view-daily');
+    const monthlyBtn = document.getElementById('graph-view-monthly');
+
+    if (dailyBtn) dailyBtn.onclick = () => {
+        currentViewMode = 'daily';
+        updateViewButtons();
+        // Reset to most recent date
+        currentDateIndex = availableDates.length > 0 ? availableDates.length - 1 : 0;
+        updateNavigationUI()
+        renderCurrentView();
+    };
+    if (monthlyBtn) monthlyBtn.onclick = () => {
+        currentViewMode = 'monthly';
+        updateViewButtons();
+        // Reset to most recent month
+        currentDateIndex = availableMonths.length > 0 ? availableMonths.length - 1 : 0;
+        updateNavigationUI()
+        renderCurrentView();
     };
 
     setupNavigation();
@@ -40,26 +61,28 @@ function setupNavigation() {
     const dateDisplay = document.getElementById('graph-date-display');
 
     if (prevBtn) {
-        prevBtn.onclick = () => navigateDate(-1);
+        prevBtn.onclick = () => navigateView(-1);
     }
     if (nextBtn) {
-        nextBtn.onclick = () => navigateDate(1);
+        nextBtn.onclick = () => navigateView(1);
     }
 }
 
-function navigateDate(direction) {
-    if (availableDates.length === 0) return;
-
-    const newIndex = currentDateIndex + direction;
-    
-    
-    if (newIndex < 0 || newIndex >= availableDates.length){
-        return;
+function navigateView(direction) {
+    if (currentViewMode === 'daily') {
+        if (availableDates.length === 0) return;
+        const newIndex = currentDateIndex + direction;
+        if (newIndex < 0 || newIndex >= availableDates.length) return;
+        currentDateIndex = newIndex;
+    } else {
+        if (availableMonths.length === 0) return;
+        const newIndex = currentDateIndex + direction;
+        if (newIndex < 0 || newIndex >= availableMonths.length) return;
+        currentDateIndex = newIndex;
     }
 
-    currentDateIndex = newIndex;
     updateNavigationUI();
-    renderCurrentDate();
+    renderCurrentView();
 }
 
 function updateNavigationUI() {
@@ -67,27 +90,46 @@ function updateNavigationUI() {
     const nextBtn = document.getElementById('graph-nav-next');
     const dateDisplay = document.getElementById('graph-date-display');
 
+    let isDisabledPrev = currentDateIndex === 0;
+    let isDisabledNext = false;
+    let displayText = "Loading...";
+
+    if (currentViewMode === 'daily') {
+        isDisabledNext = currentDateIndex === availableDates.length - 1;
+        
+        if (availableDates.length > 0) {
+            const dateStr = availableDates[currentDateIndex];
+            const dateObj = new Date(dateStr);
+            displayText = dateObj.toLocaleDateString('en-US', { 
+                weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' 
+            });
+        }
+    } else {
+        // Monthly View
+        isDisabledNext = currentDateIndex === availableMonths.length - 1;
+        if (availableMonths.length > 0) {
+            const monthStr = availableMonths[currentDateIndex]; // YYYY-MM
+            const [year, month] = monthStr.split('-');
+            const dateObj = new Date(parseInt(year), parseInt(month) - 1, 1);
+            // Format: "April 2026"
+            displayText = dateObj.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+        }
+    }
+
     if (prevBtn) {
-        prevBtn.disabled = currentDateIndex === 0;
-        prevBtn.classList.toggle('opacity-50', currentDateIndex === 0);
-        prevBtn.classList.toggle('cursor-not-allowed', currentDateIndex === 0);
+        prevBtn.disabled = isDisabledPrev;
+        prevBtn.classList.toggle('opacity-50', isDisabledPrev);
+        prevBtn.classList.toggle('cursor-not-allowed', isDisabledPrev);
     }
 
     if (nextBtn) {
-        nextBtn.disabled = currentDateIndex === availableDates.length - 1;
-        nextBtn.classList.toggle('opacity-50', currentDateIndex === availableDates.length - 1);
-        nextBtn.classList.toggle('cursor-not-allowed', currentDateIndex === availableDates.length - 1);
+        nextBtn.disabled = isDisabledNext;
+        nextBtn.classList.toggle('opacity-50', isDisabledNext);
+        nextBtn.classList.toggle('cursor-not-allowed', isDisabledNext);
     }
 
-    if (dateDisplay && availableDates.length > 0) {
-        const dateStr = availableDates[currentDateIndex];
-        const dateObj = new Date(dateStr);
-        dateDisplay.textContent = dateObj.toLocaleDateString('en-US', { 
-            weekday: 'short', 
-            day: 'numeric', 
-            month: 'short', 
-            year: 'numeric' 
-        });
+    if (dateDisplay) {
+        dateDisplay.textContent = displayText;
     }
 }
 
@@ -96,6 +138,13 @@ function updateControlButtons() {
     const gasBtn = document.getElementById('graph-type-gas');
     if (elecBtn) elecBtn.classList.toggle('active', currentDataType === 'electricity');
     if (gasBtn) gasBtn.classList.toggle('active', currentDataType === 'gas');
+}
+
+function updateViewButtons() {
+    const dailyBtn = document.getElementById('graph-view-daily');
+    const monthlyBtn = document.getElementById('graph-view-monthly');
+    if (dailyBtn) dailyBtn.classList.toggle('active', currentViewMode === 'daily');
+    if (monthlyBtn) monthlyBtn.classList.toggle('active', currentViewMode === 'monthly');
 }
 
 function updateEmptyState(msg) {
@@ -126,18 +175,37 @@ async function loadAllData() {
     const dateSet = new Set(allUsageData.map(d => d.date));
     availableDates = Array.from(dateSet).sort();
 
+    const monthSet = new Set();
+    availableDates.forEach(dateStr => {
+        // dateStr is YYYY-MM-DD
+        const parts = dateStr.split('-');
+        if (parts.length >= 2) {
+            monthSet.add(`${parts[0]}-${parts[1]}`);
+        }
+    });
+    availableMonths = Array.from(monthSet).sort();
+
     if (availableDates.length === 0) {
         updateEmptyState("No valid dates found in data.");
         return;
     }
 
-    currentDateIndex = availableDates.length - 1;
+    currentDateIndex = currentViewMode === "daily" ? availableDates.length - 1: availableMonths.length -1;
     
+    updateViewButtons();
     updateNavigationUI();
-    renderCurrentDate();
+    renderCurrentView();
 }
 
-async function renderCurrentDate() {
+function renderCurrentView() {
+    if (currentViewMode === 'daily') {
+        renderDailyView();
+    } else {
+        renderMonthlyView();
+    }
+}
+
+async function renderDailyView() {
     if (availableDates.length === 0) return;
 
     const targetDate = availableDates[currentDateIndex];
@@ -186,7 +254,68 @@ async function renderCurrentDate() {
     renderChart(labels, values, currentDataType, targetDate);
 }
 
-function renderChart(labels, values, dataType, dateLabel) {
+function renderMonthlyView() {
+    if (availableMonths.length === 0) return;
+
+    const targetMonth = availableMonths[currentDateIndex];
+    const [year, month] = targetMonth.split('-');
+    
+    const dailyTotals = {};
+    
+    // Initialize all days in the month to 0
+    const daysInMonth = new Date(parseInt(year), parseInt(month), 0).getDate();
+    for (let i = 1; i <= daysInMonth; i++) {
+        const dayStr = `${year}-${month}-${String(i).padStart(2, '0')}`;
+        dailyTotals[dayStr] = 0;
+    }
+
+    const monthData = allUsageData.filter(d => d.date.startsWith(targetMonth));
+    
+    monthData.forEach(row => {
+        const dateKey = row.date;
+        const usages = currentDataType === "electricity" ? row.raw_elec_data?.usages : row.raw_gas_data?.usages;
+        if (!usages) return;
+
+        let dayTotal = 0;
+        usages.forEach(usage => {
+            dayTotal += calculateValue(usage);
+        });
+        
+        if (dailyTotals.hasOwnProperty(dateKey)) {
+            dailyTotals[dateKey] += dayTotal;
+        }
+    });
+
+    const labels = [];
+    const values = [];
+
+    Object.keys(dailyTotals).forEach(dateKey => {        
+        const dayNum = parseInt(dateKey.split('-')[2]);
+        labels.push(dayNum.toString()); // Just the day number
+        values.push(dailyTotals[dateKey]);
+    });
+
+    if (values.length === 0) {
+        updateEmptyState(`No data found for ${targetMonth}.`);
+        return;
+    }
+
+    renderChart(labels, values, `${month}/${year}`, 'day');
+}
+
+function calculateValue(usage) {
+    if (currentDataType === 'electricity') {
+        const dLow = parseDutchNumber(usage.delivery_low);
+        const dHigh = parseDutchNumber(usage.delivery_high);
+        const rLow = parseDutchNumber(usage.returned_delivery_low);
+        const rHigh = parseDutchNumber(usage.returned_delivery_high);
+        return (dLow + dHigh) - (rLow + rHigh);
+    } else {
+        return parseDutchNumber(usage.delivery);
+    }
+}
+
+function renderChart(labels, values, labelSuffix, xAxisType) {
     const container = document.getElementById('usage-graph-content');
     if (!container) return;
 
@@ -202,7 +331,7 @@ function renderChart(labels, values, dataType, dateLabel) {
     container.appendChild(canvas);
 
     const ctx = canvas.getContext('2d');
-    const isElectricity = dataType === 'electricity';
+    const isElectricity = currentDataType === 'electricity';
     const unit = isElectricity ? 'kWh' : 'm³';
     const color = isElectricity ? '#3b82f6' : '#22c55e';
     const label = isElectricity ? 'Electricity Consumption' : 'Gas Consumption';
@@ -212,7 +341,7 @@ function renderChart(labels, values, dataType, dateLabel) {
         data: {
             labels: labels,
             datasets: [{
-                label: `${label} (${dateLabel})`,
+                label: `${label} (${labelSuffix})`,
                 data: values,
                 borderColor: color,
                 backgroundColor: isElectricity ? 'rgba(59, 130, 246, 0.1)' : 'rgba(34, 197, 94, 0.1)',
@@ -232,6 +361,9 @@ function renderChart(labels, values, dataType, dateLabel) {
                     callbacks: {
                         label: (ctx) => `${ctx.parsed.y.toFixed(2)} ${unit}`,
                         title: (items) => {
+                            if (xAxisType === 'day') {
+                                return `Day ${items[0].label}`;
+                            }
                             return items[0].label;
                         }
                     }
@@ -246,11 +378,11 @@ function renderChart(labels, values, dataType, dateLabel) {
                 },
                 x: {
                     ticks: {
-                        maxTicksLimit: 24,
+                        maxTicksLimit: xAxisType === 'day' ? 31 : 24,
                         maxRotation: 0,
                         minRotation: 0,
                         autoSkip: true,
-                        autoSkipPadding: 10
+                        autoSkipPadding: 5
                     }
                 }
             }
