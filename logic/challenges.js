@@ -59,7 +59,7 @@ function openDetailView(challenge) {
     const challengeProgress = challenge.challenge_progress
     const challengeProgressAllHouses = challenge.challenge_progress_all_houses
 
-    const currentHouseName = "house_name_1"
+    const currentHouseName = "Test Account"
     const currentHouseGeneralData = challengeProgressAllHouses[currentHouseName]
 
     // Populate content
