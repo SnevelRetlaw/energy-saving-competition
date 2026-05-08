@@ -29,22 +29,24 @@ export async function fetchLeaderboardData(supabaseClient) {
     }
 }
 
-// export async function fetchChallengesData(supabaseClient) {
-//     if (!supabaseClient) throw new Error("Missing Supabase client");
+export async function fetchActiveAndFinishedChallengesData(supabaseClient) {
+    if (!supabaseClient) throw new Error("Missing Supabase client");
+    const today = new Date().toISOString().split('T')[0]
 
-//     try {
-//         const { data, error } = await supabaseClient
-//             .from('Challenges')
-//             .select('*')
-//             .order('start', { ascending: false });
+    try {
+        const { data, error } = await supabaseClient
+            .from('Challenges')
+            .select('*')
+            .order('start', { ascending: false })
+            .lte('start', today)
 
-//         return data
-//     } catch (err){
-//         console.error("Fetching challenges failed:", err)
-//         return null
-//     }
+        return data
+    } catch (err){
+        console.error("Fetching challenges failed:", err)
+        return null
+    }
 
-// }
+}
 
 export async function fetchActiveChallengeData(supabaseClient) {
     if (!supabaseClient) throw new Error("Missing Supabase client");
@@ -59,8 +61,6 @@ export async function fetchActiveChallengeData(supabaseClient) {
             .gte('end', today)
             .order('start', { ascending: false })
             .limit(1);
-
-        if (error) throw error;
 
         return data.length > 0 ? data[0] : null;
     } catch (err) {
@@ -77,7 +77,7 @@ export async function fetchChallengeProgress(supabaseClient, challengeID, houseI
             .from('Challenge progress')
             .select('*')
             .eq('house_id', houseId)
-            .eq('challenge_id', challengeID)
+            .in('challenge_id', challengeID)
 
         if (error) throw error
 

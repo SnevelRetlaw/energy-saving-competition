@@ -1,26 +1,70 @@
-import { fetchCurrentHouseName, fetchActiveChallengeData, fetchChallengeProgress } from "./data-fetcher.js";
+import { fetchCurrentHouseName, fetchActiveChallengeData, fetchChallengeProgress, fetchActiveAndFinishedChallengesData } from "./data-fetcher.js";
 
-export function initChallenges(supabaseClient) {
+let availableChallenges = []
+let availableProgressObjects = []
+let currentChallengeIndex = 0
+let currentHouseName = ""
+let currentHouseId = ""
+
+
+export async function initChallenges(supabaseClient) {
     if (!supabaseClient) {
         console.error("Supabase client not initialized for challenges");
         return;
     }
-
+    currentHouseId = (await supabaseClient.auth.getUser()).data.user.id
+    currentHouseName = await fetchCurrentHouseName(supabaseClient, currentHouseId)
     fetchAndRenderChallenges(supabaseClient);
 }
 
 export async function fetchAndRenderChallenges(supabaseClient) {
     const challenge = await fetchActiveChallengeData(supabaseClient);
-    const currentHouseId = (await supabaseClient.auth.getUser()).data.user.id
-    const challengeProgress = await fetchChallengeProgress(supabaseClient, challenge.id, currentHouseId)
+    const challengeProgress = await fetchChallengeProgress(supabaseClient, [challenge.id], currentHouseId)
     renderChallenge(challenge, challengeProgress[0].points ?? 0);
-
-    const currentHouseName = await fetchCurrentHouseName(supabaseClient, currentHouseId)
 
     const showMoreBtn = document.getElementById('show-more-btn')
     if(showMoreBtn){
-        showMoreBtn.addEventListener('click', () => openDetailView(challenge, challengeProgress[0], currentHouseName))
+        showMoreBtn.addEventListener('click', () => fetchAndRenderDetailedChallenges(supabaseClient))
     }
+}
+
+async function fetchAndRenderDetailedChallenges(supabaseClient){
+    const allChallenges = await fetchActiveAndFinishedChallengesData(supabaseClient)
+    availableChallenges = allChallenges || []
+
+    const allChallengeIds = allChallenges.map(challenge => challenge.id)
+    const allChallengeProgresses = await fetchChallengeProgress(supabaseClient, allChallengeIds, currentHouseId)
+    availableProgressObjects = allChallengeProgresses || []
+    const currentChallengeProgress = getCorrectChallengeProgress()
+
+    if (availableChallenges.length > 0 && availableProgressObjects.length > 0){
+        openDetailView(availableChallenges[currentChallengeIndex], currentChallengeProgress, currentHouseName)
+    }
+}
+
+function getCorrectChallengeProgress(){
+    const challenge = availableChallenges[currentChallengeIndex]
+    const challengeID = challenge.id
+    for(const challengeProgress of availableProgressObjects){
+        if (challengeID == challengeProgress.challenge_id) return challengeProgress
+    }
+    return null
+}
+
+function nextPage(){
+    currentChallengeIndex = (currentChallengeIndex + 1) % availableChallenges.length
+    openDetailView(availableChallenges[currentChallengeIndex], getCorrectChallengeProgress(), currentHouseName)
+}
+window.handleChallengeNavNext = async () => {
+    await nextPage()
+}
+
+function previousPage(){
+    currentChallengeIndex = (currentChallengeIndex - 1) % availableChallenges.length
+    openDetailView(availableChallenges[currentChallengeIndex], getCorrectChallengeProgress(), currentHouseName)
+}
+window.handleChallengeNavPrev = async () => {
+    await previousPage()
 }
 
 function renderChallenge(challenge, currentPoints) {
@@ -59,9 +103,7 @@ function openDetailView(challenge, challengeProgressObject, currentHouseName) {
     const contentArea = document.getElementById('detail-content');
     
     if (!detailView || !contentArea) return;
-
     
-
     const challengeProgressAllHouses = challenge.challenge_progress_all_houses
 
     const currentHouseGeneralData = challengeProgressAllHouses[currentHouseName]
@@ -160,6 +202,19 @@ function openDetailView(challenge, challengeProgressObject, currentHouseName) {
         `;
     }
 
+    if (availableChallenges.length > 1){
+        html += `
+            <div class="flex justify-between mt-8 pt-6 border-t">
+                <button onclick="window.handleChallengeNavPrev()" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 ${currentChallengeIndex === 0 ? 'opacity-50 cursor-not-allowed' : ''}">
+                    ← Previous
+                </button>
+                <button onclick="window.handleChallengeNavNext()" class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 ${currentChallengeIndex === availableChallenges.length - 1 ? 'opacity-50 cursor-not-allowed' : ''}">
+                    Next →
+                </button>
+            </div>
+        `;
+    }
+
     contentArea.innerHTML = html
     // Slide in
     detailView.classList.add('active');
@@ -177,6 +232,7 @@ function openDetailView(challenge, challengeProgressObject, currentHouseName) {
 }
 
 function closeDetailView() {
+    currentChallengeIndex = 0
     const detailView = document.getElementById('challenge-detail-view');
     if (detailView) {
         detailView.classList.remove('active');
