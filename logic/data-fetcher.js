@@ -1,3 +1,18 @@
+export async function fetchCurrentHouseName(supabaseClient, houseId = null){
+    if (!houseId){
+        houseId = (await supabaseClient.auth.getUser()).data.user.id
+    }
+
+    const {data: currentHouseName, error} = await supabaseClient
+        .from("Participants")
+        .select("house_name")
+        .eq("auth_user_id", houseId)
+
+    if (error) throw error
+
+    return currentHouseName[0].house_name
+}
+
 export async function fetchLeaderboardData(supabaseClient) {
     if (!supabaseClient) throw new Error("Supabase client missing");
     

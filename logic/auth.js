@@ -2,6 +2,7 @@ import { initChallenges } from "./challenges.js";
 import { initDailyEnergyInsight } from "./daily-energy-insight.js";
 import { initLeaderboard } from "./leaderboard.js";
 import { initUsageGraph } from "./usage-graph.js";
+import { fetchCurrentHouseName } from "./data-fetcher.js";
 
 let supabaseClient = null;
 let currentUser = null;
@@ -137,7 +138,7 @@ async function showDashboard() {
     const userEmailSpan = document.getElementById('user-email-display');
     
     if (currentUser && userEmailSpan) {
-        userEmailSpan.textContent = currentUser.email;
+        userEmailSpan.textContent = await fetchCurrentHouseName(supabaseClient);
         userInfoBar.classList.add('active');
 
 

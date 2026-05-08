@@ -1,4 +1,4 @@
-import { fetchActiveChallengeData, fetchChallengeProgress } from "./data-fetcher.js";
+import { fetchCurrentHouseName, fetchActiveChallengeData, fetchChallengeProgress } from "./data-fetcher.js";
 
 export function initChallenges(supabaseClient) {
     if (!supabaseClient) {
@@ -15,9 +15,11 @@ export async function fetchAndRenderChallenges(supabaseClient) {
     const challengeProgress = await fetchChallengeProgress(supabaseClient, challenge.id, currentHouseId)
     renderChallenge(challenge, challengeProgress[0].points ?? 0);
 
+    const currentHouseName = await fetchCurrentHouseName(supabaseClient, currentHouseId)
+
     const showMoreBtn = document.getElementById('show-more-btn')
     if(showMoreBtn){
-        showMoreBtn.addEventListener('click', () => openDetailView(challenge, challengeProgress[0]))
+        showMoreBtn.addEventListener('click', () => openDetailView(challenge, challengeProgress[0], currentHouseName))
     }
 }
 
@@ -52,7 +54,7 @@ function renderChallenge(challenge, currentPoints) {
         `;
 }
 
-function openDetailView(challenge, challengeProgressObject) {
+function openDetailView(challenge, challengeProgressObject, currentHouseName) {
     const detailView = document.getElementById('challenge-detail-view');
     const contentArea = document.getElementById('detail-content');
     
@@ -62,7 +64,6 @@ function openDetailView(challenge, challengeProgressObject) {
 
     const challengeProgressAllHouses = challenge.challenge_progress_all_houses
 
-    const currentHouseName = "Testhouse-Reusel"
     const currentHouseGeneralData = challengeProgressAllHouses[currentHouseName]
 
     // Populate content
