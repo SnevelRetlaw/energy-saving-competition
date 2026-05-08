@@ -1,4 +1,4 @@
-import { fetchActiveChallengeData } from "./data-fetcher.js";
+import { fetchActiveChallengeData, fetchChallengeProgress } from "./data-fetcher.js";
 
 export function initChallenges(supabaseClient) {
     if (!supabaseClient) {
@@ -11,15 +11,17 @@ export function initChallenges(supabaseClient) {
 
 export async function fetchAndRenderChallenges(supabaseClient) {
     const challenge = await fetchActiveChallengeData(supabaseClient);
-    renderChallenge(challenge);
+    const currentHouseId = (await supabaseClient.auth.getUser()).data.user.id
+    const challengeProgress = await fetchChallengeProgress(supabaseClient, challenge.id, currentHouseId)
+    renderChallenge(challenge, challengeProgress[0].points ?? 0);
 
     const showMoreBtn = document.getElementById('show-more-btn')
     if(showMoreBtn){
-        showMoreBtn.addEventListener('click', () => openDetailView(challenge))
+        showMoreBtn.addEventListener('click', () => openDetailView(challenge, challengeProgress[0]))
     }
 }
 
-function renderChallenge(challenge) {
+function renderChallenge(challenge, currentPoints) {
     const challengeList = document.getElementById("challenges-list");
     if (!challengeList) return;
 
@@ -39,10 +41,10 @@ function renderChallenge(challenge) {
                 <div class="p-4">
                     <div class="font-medium text-lg mb-1">${challenge.title}</div>
                     <div class="bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-0.5 rounded">
-                        ${challenge.points}/50 pts
+                        ${currentPoints}/${challenge.id == 7 ? "25" : "50"} punten
                     </div>
                     <div class="font-italic text-xs text-gray-600 mb-2">
-                        <i>running from ${challenge.start} to ${challenge.end}</i>
+                        <i>Loopt van ${challenge.start} tot ${challenge.end}</i>
                     </div>
                     <div class="text-gray-600 text-sm">${shortDesc}</div>
                 </div>
@@ -50,16 +52,17 @@ function renderChallenge(challenge) {
         `;
 }
 
-function openDetailView(challenge) {
+function openDetailView(challenge, challengeProgressObject) {
     const detailView = document.getElementById('challenge-detail-view');
     const contentArea = document.getElementById('detail-content');
     
     if (!detailView || !contentArea) return;
 
-    const challengeProgress = challenge.challenge_progress
+    
+
     const challengeProgressAllHouses = challenge.challenge_progress_all_houses
 
-    const currentHouseName = "Test Account"
+    const currentHouseName = "Testhouse-Reusel"
     const currentHouseGeneralData = challengeProgressAllHouses[currentHouseName]
 
     // Populate content
@@ -69,7 +72,7 @@ function openDetailView(challenge) {
             
             <div class="flex items-center gap-4 mb-6">
                 <span class="bg-green-100 text-green-800 text-sm font-bold px-3 py-1 rounded-full">
-                    +${challenge.points} Points
+                    +${challengeProgressObject.points} Points
                 </span>
                 <span class="text-gray-600 text-sm">
                     From ${challenge.start} to ${challenge.end}
@@ -84,7 +87,7 @@ function openDetailView(challenge) {
     `;
 
     // Daily Progress Table
-    if (Object.keys(challengeProgress).length > 0) {
+    if (Object.keys(challengeProgressObject).length > 0) {
         html += `
             <div class="mb-8">
                 <h3 class="text-lg font-semibold text-gray-700 mb-3">Daily Progress</h3>
@@ -102,17 +105,17 @@ function openDetailView(challenge) {
                         </thead>
                         <tbody>
         `;
-
-        for (const [day, data] of Object.entries(challengeProgress)) {
+        
+        for (const [date, data] of Object.entries(challengeProgressObject.challenge_progress)) {
             const feedbackIcon = getFeedbackIcon(data.feedback);
             html += `
                 <tr>
-                    <td class="font-medium">${day}</td>
-                    <td>${data.date}</td>
+                    <td class="font-medium">${data.day}</td>
+                    <td>${date}</td>
                     <td>${data.expected}</td>
-                    <td>${data.actual}</td>
-                    <td>${data.difference}</td>
-                    <td>${feedbackIcon}</td>
+                    <td>${data.actual ?? "-"}</td>
+                    <td>${data.difference ?? "-"}</td>
+                    <td>${feedbackIcon ?? "-"}</td>
                 </tr>
             `;
         }        
@@ -130,11 +133,11 @@ function openDetailView(challenge) {
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div class="bg-blue-50 rounded-lg p-4">
                         <div class="text-sm text-gray-600 mb-1">Combined Expected Usage</div>
-                        <div class="text-xl font-bold text-gray-800">${currentHouseGeneralData.combined_expected}</div>
+                        <div class="text-xl font-bold text-gray-800">${currentHouseGeneralData.expected}</div>
                     </div>
                     <div class="bg-green-50 rounded-lg p-4">
                         <div class="text-sm text-gray-600 mb-1">Combined Actual Usage</div>
-                        <div class="text-xl font-bold text-gray-800">${currentHouseGeneralData.combined_actual}</div>
+                        <div class="text-xl font-bold text-gray-800">${currentHouseGeneralData.actual}</div>
                     </div>
                     <div class="bg-purple-50 rounded-lg p-4">
                         <div class="text-sm text-gray-600 mb-1">Difference</div>
@@ -207,32 +210,54 @@ function renderComparisonChart(housesData, currentHouseName) {
     ctx.scale(dpr, dpr);
 
     // Prepare Data
-    // Convert string percentages to numbers, handle negative signs if any
     const rawData = Object.entries(housesData).map(([name, data]) => ({
         name,
-        value: parseFloat(data.difference.replace('%', '')) || 0
+        value: parseFloat(data.difference) || 0
     }));
 
-    // Sort by value (ascending: best performance first)
-    const sortedData = rawData.sort((a, b) => b.value - a.value);
+    // Sort by value (ascending: most negative first)
+    const sortedData = rawData.sort((a, b) => a.value - b.value);
 
-    const padding = { top: 20, right: 30, bottom: 20, left: 100 };
+    // Calculate dynamic dimensions
+    const padding = { 
+        top: 20, 
+        right: 30, 
+        bottom: 20, 
+        left: 120 // Safe zone for labels
+    };
+    
     const chartWidth = rect.width - padding.left - padding.right;
     const chartHeight = rect.height - padding.top - padding.bottom;
     
     const barHeight = Math.max(20, (chartHeight / sortedData.length) - 10);
-    const maxVal = Math.max(...sortedData.map(d => d.value), 5); // Ensure 5% is visible
-    const scale = chartWidth / (maxVal * 1.1); // 10% buffer
+    
+    // Find min/max values for dynamic scaling
+    const minVal = Math.min(...sortedData.map(d => d.value), -100);
+    const maxVal = Math.max(...sortedData.map(d => d.value), 5);
+    
+    // --- MODIFICATION 2: Dynamic Zero Line ---
+    const totalRange = maxVal - minVal;
+    const zeroOffsetPixels = ((0 - minVal) / totalRange) * chartWidth;
+    const zeroX = padding.left + zeroOffsetPixels;
+    const scale = chartWidth / totalRange;
 
     // Clear Canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    // Draw zero line
+    ctx.beginPath();
+    ctx.moveTo(zeroX, padding.top);
+    ctx.lineTo(zeroX, padding.top + chartHeight);
+    ctx.strokeStyle = '#6b7280'; 
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
     // Draw Reference Line at 5%
-    const x5 = padding.left + (5 * scale);
+    const x5 = zeroX + (5 * scale);
     ctx.beginPath();
     ctx.moveTo(x5, padding.top);
     ctx.lineTo(x5, padding.top + chartHeight);
-    ctx.strokeStyle = '#ef4444'; // Red
+    ctx.strokeStyle = '#ef4444'; 
     ctx.lineWidth = 2;
     ctx.setLineDash([5, 5]);
     ctx.stroke();
@@ -246,26 +271,82 @@ function renderComparisonChart(housesData, currentHouseName) {
     // Draw Bars
     sortedData.forEach((item, index) => {
         const y = padding.top + (index * (barHeight + 10)) + (barHeight / 2);
-        const barWidth = item.value * scale;
-        const x = padding.left;
-
-        // Determine color: Current house gets special color
-        const isCurrent = item.name === currentHouseName;
-        ctx.fillStyle = isCurrent ? '#3b82f6' : '#9ace00'; // Blue for current, Gray for others
+        const barWidth = Math.abs(item.value) * scale;
         
-        // Draw Bar
-        ctx.fillRect(x, y - (barHeight/2), barWidth, barHeight);
+        // Round value to 2 decimal places
+        const roundedValue = Math.round(item.value * 100) / 100;
+        const valueLabel = `${roundedValue}%`;
+        
+        // Determine color
+        const isCurrent = item.name === currentHouseName;
+        ctx.fillStyle = isCurrent ? '#3b82f6' : '#9ace00'; 
+        
+        // Draw bar anchored at zero line
+        let barStartX;
+        let barEndX;
+        
+        if (item.value >= 0) {
+            // Positive: extends Right
+            barStartX = zeroX;
+            barEndX = zeroX + barWidth;
+            ctx.fillRect(barStartX, y - (barHeight/2), barWidth, barHeight);
+        } else {
+            // Negative: extends Left
+            barStartX = zeroX - barWidth;
+            barEndX = zeroX;
+            ctx.fillRect(barStartX, y - (barHeight/2), barWidth, barHeight);
+        }
 
-        // Draw House Name (Y-axis)
+        // Draw House Name
         ctx.fillStyle = '#31371f';
         ctx.font = 'bold 12px sans-serif';
         ctx.textAlign = 'right';
-        ctx.fillText(item.name, x - 10, y + 4);
+        ctx.fillText(item.name, padding.left - 10, y + 4);
 
-        // Draw Value (End of bar)
+        // --- MODIFICATION 1: Internal Labels at the End ---
         ctx.fillStyle = '#374151';
         ctx.font = '12px sans-serif';
-        ctx.textAlign = 'left';
-        ctx.fillText(`${item.value}%`, x + barWidth + 5, y + 4);
+        
+        let valueX;
+        let textAlign;
+        let drawInside = false;
+        
+        if (item.value >= 0) {
+            // Positive: label normally at right end
+            valueX = barEndX + 5;
+            textAlign = 'left';
+        } else {
+            // Negative: label normally at left end
+            valueX = barStartX - 5;
+            textAlign = 'right';
+            
+            // Check if label ends before safe zone
+            const textMetrics = ctx.measureText(valueLabel);
+            const textWidth = textMetrics.width;
+            const labelLeftEdge = valueX - textWidth;
+            
+            if (labelLeftEdge < padding.left) {
+                drawInside = true;
+            }
+        }
+        
+        if (drawInside) {
+            const centerY = y;
+            
+            ctx.textAlign = textAlign;
+            ctx.textBaseline = 'middle';
+            
+            const finalX = barStartX + 60;
+            
+            ctx.fillText(valueLabel, finalX, centerY);
+            
+            // Reset baseline for next iteration
+            ctx.textBaseline = 'alphabetic';
+        } else {
+            // Standard drawing outside
+            ctx.textAlign = textAlign;
+            ctx.textBaseline = 'alphabetic';
+            ctx.fillText(valueLabel, valueX, y + 4);
+        }
     });
 }

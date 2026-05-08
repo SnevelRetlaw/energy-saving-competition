@@ -54,6 +54,26 @@ export async function fetchActiveChallengeData(supabaseClient) {
     }
 }
 
+export async function fetchChallengeProgress(supabaseClient, challengeID, houseId){
+    if (!supabaseClient) throw new Error("Missing Supabase client");
+
+    try {
+        const {data, error} = await supabaseClient
+            .from('Challenge progress')
+            .select('*')
+            .eq('house_id', houseId)
+            .eq('challenge_id', challengeID)
+
+        if (error) throw error
+
+        return data
+    } catch (err) {
+        console.error(`Fetching challenge progress failed for house ${houseId}:`, err);
+        return null
+    }
+
+}
+
 export async function fetchInsightsData(supabaseClient) {
     if (!supabaseClient) throw new Error("Missing Supabase client");
 
