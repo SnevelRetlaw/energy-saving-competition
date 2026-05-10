@@ -36,6 +36,18 @@ async function fetchAndRenderDetailedDEI(supabaseClient){
     }
 }
 
+function linkify(text) {
+  const urlRegex = /\b(https?:\/\/[^\s<>"']+)/gi;
+
+  return text.replace(urlRegex, (match) => {
+    // Strip trailing punctuation
+    let cleanUrl = match.replace(/[.,;:!?)'"\\]]+$/, '');
+    
+    // Create the link string directly without internal newlines
+    return `<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">${cleanUrl}</a>`;
+  });
+}
+
 function nextPage(){
     currentDEIIndex = (currentDEIIndex + 1) % availableDEIs.length
     openInsightDetailView(availableDEIs[currentDEIIndex])
@@ -104,7 +116,7 @@ export function openInsightDetailView(currentDEI = null) {
 
             <div class="prose max-w-none text-gray-700 mb-8">
                 <h3 class="text-xl font-semibold mb-2">Insight Details</h3>
-                <p class="leading-relaxed">${escapeHtml(currentDEI.information)}</p>
+                <p class="leading-relaxed whitespace-pre-wrap">${linkify(escapeHtml(currentDEI.information))}</p>
             </div>
     `;
 
@@ -151,7 +163,7 @@ export function openInsightDetailView(currentDEI = null) {
 
 function renderQuiz(currentDEI) {
     let quiz = currentDEI.quiz
-    const question = escapeHtml(quiz.question || '');
+    const question = linkify(escapeHtml(quiz.question || ''));
     const correctKey = quiz.correct_answer;
     const givenAnswer = currentDEI.given_answer;
     const isCompleted = currentDEI.completed;

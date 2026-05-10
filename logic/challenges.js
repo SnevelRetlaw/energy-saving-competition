@@ -28,6 +28,18 @@ export async function fetchAndRenderChallenges(supabaseClient) {
     }
 }
 
+function linkify(text) {
+  const urlRegex = /\b(https?:\/\/[^\s<>"']+)/gi;
+
+  return text.replace(urlRegex, (match) => {
+    // Strip trailing punctuation
+    let cleanUrl = match.replace(/[.,;:!?)'"\\]]+$/, '');
+    
+    // Create the link string directly without internal newlines
+    return `<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">${cleanUrl}</a>`;
+  });
+}
+
 async function fetchAndRenderDetailedChallenges(supabaseClient){
     const allChallenges = await fetchActiveAndFinishedChallengesData(supabaseClient)
     availableChallenges = allChallenges || []
@@ -124,7 +136,7 @@ function openDetailView(challenge, challengeProgressObject, currentHouseName) {
 
             <div class="prose max-w-none text-gray-700 mb-8">
                 <h3 class="text-xl font-semibold mb-2">Description</h3>
-                <p class="leading-relaxed">${challenge.description}</p>
+                <p class="leading-relaxed whitespace-pre-wrap">${challenge.description}</p>
             </div>
         </div>
     `;
