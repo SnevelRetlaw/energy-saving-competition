@@ -167,9 +167,9 @@ function openDetailView(challenge, challengeProgressObject, currentHouseName) {
                 <tr>
                     <td class="font-medium">${data.day}</td>
                     <td>${date}</td>
-                    <td>${data.expected}</td>
-                    <td>${data.actual ?? "-"}</td>
-                    <td>${data.difference ?? "-"}</td>
+                    <td>${data.expected.toFixed(2)} kWh</td>
+                    <td>${data.actual ? data.actual.toFixed(2) : "-"} kWh</td>
+                    <td>${data.difference ?? "-"}%</td>
                     <td>${feedbackIcon ?? "-"}</td>
                 </tr>
             `;
@@ -195,8 +195,8 @@ function openDetailView(challenge, challengeProgressObject, currentHouseName) {
                         <div class="text-xl font-bold text-gray-800">${currentHouseGeneralData.actual}</div>
                     </div>
                     <div class="bg-purple-50 rounded-lg p-4">
-                        <div class="text-sm text-gray-600 mb-1">Difference</div>
-                        <div class="text-xl font-bold text-gray-800">${currentHouseGeneralData.difference}</div>
+                        <div class="text-sm text-gray-600 mb-1">% saved compared to expected</div>
+                        <div class="text-xl font-bold text-gray-800">${currentHouseGeneralData.difference}%</div>
                     </div>
                 </div>
             </div>
