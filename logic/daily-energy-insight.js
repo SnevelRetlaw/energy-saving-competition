@@ -1,7 +1,9 @@
-import { fetchInsightsData } from "./data-fetcher.js";
+import { fetchAvailableDEIs, fetchDEIProgress } from "./data-fetcher.js";
 
 let availableDEIs = []
+let availableDEIProgressObjects = []
 let currentDEIIndex = 0
+let currentHouseId = ""
 let supabaseClientGlob = null
 
 export async function initDailyEnergyInsight(supabaseClient) {    
@@ -11,25 +13,35 @@ export async function initDailyEnergyInsight(supabaseClient) {
     }
 
     supabaseClientGlob = supabaseClient
-    await fetchAndRenderDailyEnergyInsight(supabaseClient);
+    currentHouseId = (await supabaseClientGlob.auth.getUser()).data.user.id
+    await fetchAndRenderDailyEnergyInsight();
 }
 
-export async function fetchAndRenderDailyEnergyInsight(supabaseClient){
-    const data = await fetchInsightsData(supabaseClient)
-    availableDEIs = data || []
+export async function fetchAndRenderDailyEnergyInsight(){
     currentDEIIndex = 0
+
+    const DEIData = await fetchAvailableDEIs(supabaseClientGlob)
+    availableDEIs = DEIData || []
+
+    const currentDEI = availableDEIs[currentDEIIndex]
+    const DEIProgressData = (await fetchDEIProgress(supabaseClientGlob, [currentDEI.id], currentHouseId))[0]
+
     if (availableDEIs.length > 0){
-        renderCompactInsight(availableDEIs[currentDEIIndex])
+        renderCompactInsight(currentDEI, DEIProgressData.points)
     } else {
         renderEmptyState()
     }
 }
 
-async function fetchAndRenderDetailedDEI(supabaseClient){
-    const data = await fetchInsightsData(supabaseClient)
-    availableDEIs = data || []
+export async function fetchAndRenderDetailedDEI(){
+    const DEIData = await fetchAvailableDEIs(supabaseClientGlob)
+    availableDEIs = DEIData || []
+
+    const availableDEIIds = availableDEIs.map(dei => dei.id)
+    const allDEIProgressObjects = await fetchDEIProgress(supabaseClientGlob, availableDEIIds, currentHouseId)
+    availableDEIProgressObjects = allDEIProgressObjects || []
     if (availableDEIs.length > 0){
-        openInsightDetailView(availableDEIs[currentDEIIndex])
+        openInsightDetailView()
     } else {
         renderEmptyState()
         closeInsightDetailView()
@@ -64,7 +76,7 @@ window.handleInsightNavPrev = async (direction) => {
     await previousPage(direction);
 };
 
-function renderCompactInsight(energyInsight) {
+function renderCompactInsight(energyInsight, points) {
     const deiContent = document.getElementById('daily-energy-insight-content')
     
     deiContent.className = 'energy-insight-content';
@@ -73,7 +85,7 @@ function renderCompactInsight(energyInsight) {
             <h3 class="energy-insight-title">${escapeHtml(energyInsight.title)}</h3>
             <div class="energy-insight-score">
                 <span class="score-label">Points:</span>
-                <span class="score-value">${energyInsight.score}</span>
+                <span class="score-value">${points}</span>
             </div>
         </div>
         <div class="energy-insight-info">
@@ -85,11 +97,21 @@ function renderCompactInsight(energyInsight) {
     `;
 }
 
-export function openInsightDetailView(currentDEI = null) {
-    if (!currentDEI){
-        currentDEI = availableDEIs[currentDEIIndex]
+function getCorrectDeiProgress(){
+    const DEI = availableDEIs[currentDEIIndex]
+    const DEIId = DEI.id
+    for(const DEIProgress of availableDEIProgressObjects){
+        if (DEIId == DEIProgress.dei_id) return DEIProgress
     }
+    return null
+}
+
+function openInsightDetailView() {
+    const currentDEI = availableDEIs[currentDEIIndex]
     if (!currentDEI) return;
+
+    const currentDEIProgress = getCorrectDeiProgress()
+    if (!currentDEIProgress) return;
 
     const detailView = document.getElementById('insight-detail-view');
     const contentArea = document.getElementById('insight-detail-content');
@@ -107,7 +129,7 @@ export function openInsightDetailView(currentDEI = null) {
             
             <div class="flex items-center gap-4 mb-6">
                 <span class="bg-blue-100 text-blue-800 text-sm font-bold px-3 py-1 rounded-full">
-                    ${currentDEI.score} Points
+                    ${currentDEIProgress.points} Points
                 </span>
                 <span class="text-gray-600 text-sm">
                     ${formatDate(currentDEI.date)}
@@ -124,7 +146,7 @@ export function openInsightDetailView(currentDEI = null) {
         html += `
             <div class="mb-8">
                 <h3 class="text-lg font-semibold text-gray-700 mb-3">Knowledge Check</h3>
-                ${renderQuiz(currentDEI)}
+                ${renderQuiz()}
             </div>
         `;
     }
@@ -161,12 +183,14 @@ export function openInsightDetailView(currentDEI = null) {
     detailView.classList.add('active');
 }
 
-function renderQuiz(currentDEI) {
+function renderQuiz() {
+    const currentDEI = availableDEIs[currentDEIIndex]
+    const currentDEIProgress = getCorrectDeiProgress()
     let quiz = currentDEI.quiz
     const question = linkify(escapeHtml(quiz.question || ''));
-    const correctKey = quiz.correct_answer;
-    const givenAnswer = currentDEI.given_answer;
-    const isCompleted = currentDEI.completed;
+    const correctAnswer = quiz.correct_answer;
+    const givenAnswer = currentDEIProgress.given_answer;
+    const isCompleted = currentDEIProgress.completed;
 
     const answers = [
         { key: 'a', value: quiz.answer_a },
@@ -179,7 +203,7 @@ function renderQuiz(currentDEI) {
 
     if (isCompleted) {
         // RENDER LOCKED VIEW: Show Question + Correct Answer Highlighted
-        const isCorrect = givenAnswer === correctKey;
+        const isCorrect = givenAnswer === correctAnswer;
 
         optionsHtml = `
             <div class="quiz-options" style="pointer-events: none;">
@@ -187,11 +211,11 @@ function renderQuiz(currentDEI) {
                     let styleClass = "option-text";
                     let icon = "";
                     
-                    if (ans.key === correctKey) {
+                    if (ans.key === correctAnswer) {
                         // Correct Answer: Green Background + Checkmark
                         styleClass = "option-text font-bold text-green-800 bg-green-100 border border-green-300 rounded p-2";
                         icon = " ✓";
-                    } else if (ans.key === givenAnswer && ans.key !== correctKey) {
+                    } else if (ans.key === givenAnswer && ans.key !== correctAnswer) {
                         // Incorrect Answer: Red Background + X
                         styleClass = "option-text font-bold text-red-800 bg-red-100 border border-red-300 rounded p-2";
                         icon = " ✗";
@@ -213,7 +237,7 @@ function renderQuiz(currentDEI) {
                 </div>
             ` : `
                 <div class="mt-3 p-3 bg-red-50 border border-red-200 rounded text-red-800 text-sm font-semibold">
-                    ❌ Incorrect. The correct answer was <strong>${correctKey.toUpperCase()}</strong>.
+                    ❌ Incorrect. The correct answer was <strong>${correctAnswer.toUpperCase()}</strong>.
                 </div>
             `}
         `;
@@ -233,7 +257,7 @@ function renderQuiz(currentDEI) {
     }
 
     return `
-        <div class="quiz-section" data-correct="${correctKey}" data-id="${currentDEI.id}" style="${isCompleted ? 'opacity: 0.9;' : ''}">
+        <div class="quiz-section" data-correct="${correctAnswer}" data-id="${currentDEI.id}" style="${isCompleted ? 'opacity: 0.9;' : ''}">
             <h4 class="quiz-question">${question}</h4>
             ${optionsHtml}
             ${!isCompleted ? `<div id="quiz-feedback-${currentDEI.id}" class="mt-2"></div>` : ''}
@@ -269,7 +293,7 @@ function formatDate(dateStr) {
 
 // Expose submitQuiz globally for the quiz button
 window.submitQuiz = async function(btn) {
-    const currentDEI = availableDEIs[currentDEIIndex]
+    const currentDEIProgress = getCorrectDeiProgress()
     const quizSection = btn.closest('.quiz-section');
     const selected = document.querySelector('input[name="quiz-answer"]:checked');
     
@@ -288,15 +312,15 @@ window.submitQuiz = async function(btn) {
         }
 
         const { error } = await supabaseClientGlob
-            .from('Daily energy insight')
+            .from('DEI progress')
             .update({ 
                 given_answer: selected.value
             })
-            .eq('id', currentDEI.id)
+            .eq('id', currentDEIProgress.id)
 
         if (error) throw error;
 
-        await new Promise(r => setTimeout(r, 500));
+        await new Promise(r => setTimeout(r, 1000));
 
         fetchAndRenderDetailedDEI(supabaseClientGlob);
         

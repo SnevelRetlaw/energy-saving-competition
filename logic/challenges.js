@@ -14,7 +14,7 @@ export async function initChallenges(supabaseClient) {
     }
     currentHouseId = (await supabaseClient.auth.getUser()).data.user.id
     currentHouseName = await fetchCurrentHouseName(supabaseClient, currentHouseId)
-    fetchAndRenderChallenges(supabaseClient);
+    await fetchAndRenderChallenges(supabaseClient);
 }
 
 export async function fetchAndRenderChallenges(supabaseClient) {

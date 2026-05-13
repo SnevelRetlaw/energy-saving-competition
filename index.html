@@ -168,7 +168,7 @@
 <!-- Modular Logic Imports -->
 <script type="module">
     import { initAuth } from './logic/auth.js';
-    import { openInsightDetailView, closeInsightDetailView } from './logic/daily-energy-insight.js'
+    import { fetchAndRenderDetailedDEI, closeInsightDetailView } from './logic/daily-energy-insight.js'
 
     const supabaseUrl = "https://bwkkobxbsfxlykhvhyiu.supabase.co";
     const supabaseKey = "sb_publishable_n3rZvLIFB23tn9teqoOc0A_tbmjl94r";
@@ -178,7 +178,7 @@
 
     const detailDeiBtn = document.getElementById('show-more-insight-btn')
     if (detailDeiBtn) {
-        detailDeiBtn.addEventListener('click', () => openInsightDetailView());
+        detailDeiBtn.addEventListener('click', () => fetchAndRenderDetailedDEI());
     }
 
     const DeiBackBtn = document.getElementById('insight-back-btn')

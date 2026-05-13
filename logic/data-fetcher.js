@@ -89,7 +89,7 @@ export async function fetchChallengeProgress(supabaseClient, challengeID, houseI
 
 }
 
-export async function fetchInsightsData(supabaseClient) {
+export async function fetchAvailableDEIs(supabaseClient) {
     if (!supabaseClient) throw new Error("Missing Supabase client");
 
     const today = new Date().toISOString().split('T')[0];
@@ -104,6 +104,23 @@ export async function fetchInsightsData(supabaseClient) {
         return data
     } catch (err){
         console.error("Fetching Daily Energy Insight failed:", err)
+        return null
+    }
+}
+
+export async function fetchDEIProgress(supabaseClient, DEIId, houseId){
+    if (!supabaseClient) throw new Error("Missing Supabase client");
+
+    try{
+        const { data, error } = await supabaseClient
+            .from('DEI progress')
+            .select('*')
+            .in('dei_id', DEIId)
+            .eq('house_id', houseId)
+
+        return data
+    } catch (err){
+        console.error("Fetching Daily Energy Insight progress failed:", err)
         return null
     }
 }
