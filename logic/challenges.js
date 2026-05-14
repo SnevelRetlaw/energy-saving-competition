@@ -5,7 +5,7 @@ let availableProgressObjects = []
 let currentChallengeIndex = 0
 let currentHouseName = ""
 let currentHouseId = ""
-
+const GAS_CHALLENGE_ID = 8
 
 export async function initChallenges(supabaseClient) {
     if (!supabaseClient) {
@@ -115,10 +115,12 @@ function openDetailView(challenge, challengeProgressObject, currentHouseName) {
     const contentArea = document.getElementById('detail-content');
     
     if (!detailView || !contentArea) return;
+
+    const showGasView = challenge.id === GAS_CHALLENGE_ID
     
     const challengeProgressAllHouses = challenge.challenge_progress_all_houses
 
-    const currentHouseGeneralData = challengeProgressAllHouses[currentHouseName]
+    const currentHouseGeneralData = challengeProgressAllHouses ? challengeProgressAllHouses[currentHouseName] : null
 
     // Populate content
     let html = `
@@ -152,9 +154,9 @@ function openDetailView(challenge, challengeProgressObject, currentHouseName) {
                             <tr>
                                 <th>Day</th>
                                 <th>Date</th>
+                                <th>Baseline</th>
                                 <th>Expected</th>
                                 <th>Actual</th>
-                                <th>Difference</th>
                                 <th>Feedback</th>
                             </tr>
                         </thead>
@@ -167,9 +169,9 @@ function openDetailView(challenge, challengeProgressObject, currentHouseName) {
                 <tr>
                     <td class="font-medium">${data.day}</td>
                     <td>${date}</td>
-                    <td>${data.expected.toFixed(2)} kWh</td>
-                    <td>${data.actual ? data.actual.toFixed(2) : "-"} kWh</td>
-                    <td>${data.difference ?? "-"}%</td>
+                    <td>${data.baseline.toFixed(2)} ${showGasView ? "m³" : "kWh"}</td>
+                    <td>${data.expected.toFixed(2)} ${showGasView ? "m³" : "kWh"} (${data.expected_difference}%)</td>
+                    <td>${data.actual ? data.actual.toFixed(2) : "-"} ${showGasView ? "m³" : "kWh"} (${data.actual_difference ? data.actual_difference.toFixed(2) : '-'}%)</td>
                     <td>${feedbackIcon ?? "-"}</td>
                 </tr>
             `;
@@ -187,23 +189,23 @@ function openDetailView(challenge, challengeProgressObject, currentHouseName) {
                 <h3 class="text-lg font-semibold text-gray-700 mb-3">Your House Combined Progress</h3>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div class="bg-blue-50 rounded-lg p-4">
-                        <div class="text-sm text-gray-600 mb-1">Combined Expected Usage</div>
-                        <div class="text-xl font-bold text-gray-800">${currentHouseGeneralData.expected}</div>
+                        <div class="text-sm text-gray-600 mb-1">Combined baseline Usage</div>
+                        <div class="text-xl font-bold text-gray-800">${currentHouseGeneralData.baseline.toFixed(2)} ${showGasView ? "m³" : "kWh"}</div>
                     </div>
                     <div class="bg-green-50 rounded-lg p-4">
-                        <div class="text-sm text-gray-600 mb-1">Combined Actual Usage</div>
-                        <div class="text-xl font-bold text-gray-800">${currentHouseGeneralData.actual}</div>
+                        <div class="text-sm text-gray-600 mb-1">Combined expected Usage</div>
+                        <div class="text-xl font-bold text-gray-800">${currentHouseGeneralData.expected.toFixed(2)} ${showGasView ? "m³" : "kWh"} (${currentHouseGeneralData.expected_difference}%)</div>
                     </div>
                     <div class="bg-purple-50 rounded-lg p-4">
-                        <div class="text-sm text-gray-600 mb-1">% saved compared to expected</div>
-                        <div class="text-xl font-bold text-gray-800">${currentHouseGeneralData.difference}%</div>
+                        <div class="text-sm text-gray-600 mb-1">Combined Actual Usage</div>
+                        <div class="text-xl font-bold text-gray-800">${currentHouseGeneralData.actual.toFixed(2)} ${showGasView ? "m³" : "kWh"} (${currentHouseGeneralData.actual_difference.toFixed(2)}%)</div>
                     </div>
                 </div>
             </div>
         `;
     }
     
-    if (Object.keys(challengeProgressAllHouses).length > 1) {
+    if (challengeProgressAllHouses && Object.keys(challengeProgressAllHouses).length > 1) {
         html += `
             <div class="mb-4">
                 <h3 class="text-lg font-semibold text-gray-700 mb-3">Performance Comparison</h3>
@@ -236,7 +238,7 @@ function openDetailView(challenge, challengeProgressObject, currentHouseName) {
         backBtn.addEventListener('click', closeDetailView);
     }
 
-    if (Object.keys(challengeProgressAllHouses).length > 1) {
+    if (challengeProgressAllHouses && Object.keys(challengeProgressAllHouses).length > 1) {
         setTimeout(() => {
             renderComparisonChart(challengeProgressAllHouses, currentHouseName);
         }, 100);
@@ -281,7 +283,7 @@ function renderComparisonChart(housesData, currentHouseName) {
     // Prepare Data
     const rawData = Object.entries(housesData).map(([name, data]) => ({
         name,
-        value: parseFloat(data.difference) || 0
+        value: parseFloat(data.actual_difference) || 0
     }));
 
     // Sort by value (ascending: most negative first)
@@ -301,10 +303,9 @@ function renderComparisonChart(housesData, currentHouseName) {
     const barHeight = Math.max(20, (chartHeight / sortedData.length) - 10);
     
     // Find min/max values for dynamic scaling
-    const minVal = Math.min(...sortedData.map(d => d.value), -100);
+    const minVal = Math.min(...sortedData.map(d => d.value), -10);
     const maxVal = Math.max(...sortedData.map(d => d.value), 5);
     
-    // --- MODIFICATION 2: Dynamic Zero Line ---
     const totalRange = maxVal - minVal;
     const zeroOffsetPixels = ((0 - minVal) / totalRange) * chartWidth;
     const zeroX = padding.left + zeroOffsetPixels;
@@ -322,9 +323,10 @@ function renderComparisonChart(housesData, currentHouseName) {
     ctx.stroke();
 
     // Draw Reference Line at 5%
-    const x5 = zeroX + (5 * scale);
+    const expected_difference = housesData[currentHouseName].expected_difference
+    const x5 = zeroX + (expected_difference * scale);
     ctx.beginPath();
-    ctx.moveTo(x5, padding.top);
+    ctx.moveTo(x5, padding.top - 12);
     ctx.lineTo(x5, padding.top + chartHeight);
     ctx.strokeStyle = '#ef4444'; 
     ctx.lineWidth = 2;
@@ -335,7 +337,7 @@ function renderComparisonChart(housesData, currentHouseName) {
     // Draw Label for Reference Line
     ctx.fillStyle = '#ef4444';
     ctx.font = '12px sans-serif';
-    ctx.fillText('5% Target', x5 + 5, padding.top + 12);
+    ctx.fillText(`Target: ${expected_difference}%`, x5 + 5, padding.top - 8);
 
     // Draw Bars
     sortedData.forEach((item, index) => {
