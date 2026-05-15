@@ -18,10 +18,10 @@ export async function initDailyEnergyInsight(supabaseClient) {
 }
 
 export async function fetchAndRenderDailyEnergyInsight(){
-    currentDEIIndex = 0
 
     const DEIData = await fetchAvailableDEIs(supabaseClientGlob)
     availableDEIs = DEIData || []
+    currentDEIIndex = availableDEIs.length - 1
 
     const currentDEI = availableDEIs[currentDEIIndex]
     const DEIProgressData = (await fetchDEIProgress(supabaseClientGlob, [currentDEI.id], currentHouseId))[0]
@@ -61,19 +61,23 @@ function linkify(text) {
 }
 
 function nextPage(){
-    currentDEIIndex = (currentDEIIndex + 1) % availableDEIs.length
+    if (currentDEIIndex === availableDEIs.length -1) return
+
+    currentDEIIndex = currentDEIIndex + 1
     openInsightDetailView(availableDEIs[currentDEIIndex])
 }
-window.handleInsightNavNext = async (direction) => {
-    await nextPage(direction);
+window.handleInsightNavNext = async () => {
+    await nextPage();
 };
 
 function previousPage(){
-    currentDEIIndex = (currentDEIIndex - 1) % availableDEIs.length
+    if (currentDEIIndex === 0) return
+
+    currentDEIIndex = currentDEIIndex - 1
     openInsightDetailView(availableDEIs[currentDEIIndex])
 }
-window.handleInsightNavPrev = async (direction) => {
-    await previousPage(direction);
+window.handleInsightNavPrev = async () => {
+    await previousPage();
 };
 
 function renderCompactInsight(energyInsight, points) {

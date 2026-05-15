@@ -37,7 +37,7 @@ export async function fetchActiveAndFinishedChallengesData(supabaseClient) {
         const { data, error } = await supabaseClient
             .from('Challenges')
             .select('*')
-            .order('start', { ascending: false })
+            .order('start', { ascending: true })
             .lte('start', today)
 
         return data
@@ -99,7 +99,7 @@ export async function fetchAvailableDEIs(supabaseClient) {
             .from('Daily energy insight')
             .select('*')
             .lte('date', today)
-            .order('date', { ascending: false });
+            .order('date', { ascending: true });
 
         return data
     } catch (err){

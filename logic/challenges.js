@@ -46,6 +46,7 @@ function linkify(text) {
 async function fetchAndRenderDetailedChallenges(supabaseClient){
     const allChallenges = await fetchActiveAndFinishedChallengesData(supabaseClient)
     availableChallenges = allChallenges || []
+    currentChallengeIndex = availableChallenges.length - 1
 
     const allChallengeIds = allChallenges.map(challenge => challenge.id)
     const allChallengeProgresses = await fetchChallengeProgress(supabaseClient, allChallengeIds, currentHouseId)
@@ -67,7 +68,9 @@ function getCorrectChallengeProgress(){
 }
 
 function nextPage(){
-    currentChallengeIndex = (currentChallengeIndex + 1) % availableChallenges.length
+    if (currentChallengeIndex === availableChallenges.length -1) return
+
+    currentChallengeIndex = currentChallengeIndex + 1
     openDetailView(availableChallenges[currentChallengeIndex], getCorrectChallengeProgress(), currentHouseName)
 }
 window.handleChallengeNavNext = async () => {
@@ -75,7 +78,9 @@ window.handleChallengeNavNext = async () => {
 }
 
 function previousPage(){
-    currentChallengeIndex = (currentChallengeIndex - 1) % availableChallenges.length
+    if (currentChallengeIndex === 0) return
+
+    currentChallengeIndex = currentChallengeIndex - 1
     openDetailView(availableChallenges[currentChallengeIndex], getCorrectChallengeProgress(), currentHouseName)
 }
 window.handleChallengeNavPrev = async () => {
@@ -128,7 +133,13 @@ function openDetailView(challenge, challengeProgressObject, currentHouseName) {
     // Populate content
     let html = `
         <div class="animate-fade-in">
-            <h2 class="text-3xl font-bold text-gray-800 mb-4">${challenge.title}</h2>
+
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-3xl font-bold text-gray-800 mb-4">${challenge.title}</h2>
+                <span class="text-sm text-gray-500">
+                    ${currentChallengeIndex + 1} of ${availableChallenges.length}
+                </span>
+            </div>
             
             <div class="flex items-center gap-4 mb-6">
                 <span class="bg-green-100 text-green-800 text-sm font-bold px-3 py-1 rounded-full">
