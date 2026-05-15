@@ -320,7 +320,19 @@ window.submitQuiz = async function(btn) {
 
         if (error) throw error;
 
-        await new Promise(r => setTimeout(r, 1000));
+        let completedBool
+        do {
+            await new Promise(r => setTimeout(r, 500));
+            const {data: completed, getCompletedErr} = await supabaseClientGlob
+                .from("DEI progress")
+                .select("completed")
+                .eq('id', currentDEIProgress.id)
+
+            if (getCompletedErr) throw getCompletedErr
+
+            completedBool = completed[0].completed
+
+        } while (!completedBool)
 
         fetchAndRenderDetailedDEI(supabaseClientGlob);
         
