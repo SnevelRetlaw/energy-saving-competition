@@ -348,7 +348,7 @@ function renderChart(labels, values, labelSuffix, xAxisType) {
                 borderWidth: 2,
                 fill: true,
                 tension: 0.3,
-                pointRadius: 3,
+                pointRadius: 0,
                 pointHoverRadius: 5
             }]
         },
