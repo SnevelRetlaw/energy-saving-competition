@@ -23,7 +23,8 @@ export async function initChallenges(supabaseClient) {
 export async function fetchAndRenderChallenges(supabaseClient) {
     const challenge = await fetchActiveChallengeData(supabaseClient);
     const challengeProgress = await fetchChallengeProgress(supabaseClient, [challenge.id], currentHouseId)
-    renderChallenge(challenge, challengeProgress[0].points ?? 0);
+    const currentpoints = challengeProgress[0] ? challengeProgress[0].points : 0 
+    renderChallenge(challenge, currentpoints);
 
     const showMoreBtn = document.getElementById('show-more-btn')
     if(showMoreBtn){
@@ -143,7 +144,7 @@ function openDetailView(challenge, challengeProgressObject, currentHouseName) {
             
             <div class="flex items-center gap-4 mb-6">
                 <span class="bg-green-100 text-green-800 text-sm font-bold px-3 py-1 rounded-full">
-                    +${challengeProgressObject.points} Points
+                    +${challengeProgressObject ? challengeProgressObject.points : 0} Points
                 </span>
                 <span class="text-gray-600 text-sm">
                     From ${challenge.start} to ${challenge.end}
@@ -158,7 +159,7 @@ function openDetailView(challenge, challengeProgressObject, currentHouseName) {
     `;
 
     // Daily Progress Table
-    if (Object.keys(challengeProgressObject).length > 0) {
+    if (challengeProgressObject && Object.keys(challengeProgressObject).length > 0) {
         html += `
             <div class="mb-8">
                 <h3 class="text-lg font-semibold text-gray-700 mb-3">Daily Progress</h3>
