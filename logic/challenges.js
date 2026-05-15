@@ -5,7 +5,10 @@ let availableProgressObjects = []
 let currentChallengeIndex = 0
 let currentHouseName = ""
 let currentHouseId = ""
-const GAS_CHALLENGE_ID = 8
+const CHALLENGE_1_ID = 6
+const CHALLENGE_2_ID = 7
+const CHALLENGE_3_ID = 8
+const CHALLENGE_4_ID = 9
 
 export async function initChallenges(supabaseClient) {
     if (!supabaseClient) {
@@ -99,7 +102,7 @@ function renderChallenge(challenge, currentPoints) {
                 <div class="p-4">
                     <div class="font-medium text-lg mb-1">${challenge.title}</div>
                     <div class="bg-green-100 text-green-800 text-xs font-semibold px-2.5 py-0.5 rounded">
-                        ${currentPoints}/${challenge.id == 7 ? "25" : "50"} punten
+                        ${currentPoints}/${challenge.id == CHALLENGE_2_ID ? "25" : "50"} punten
                     </div>
                     <div class="font-italic text-xs text-gray-600 mb-2">
                         <i>Loopt van ${challenge.start} tot ${challenge.end}</i>
@@ -116,7 +119,7 @@ function openDetailView(challenge, challengeProgressObject, currentHouseName) {
     
     if (!detailView || !contentArea) return;
 
-    const showGasView = challenge.id === GAS_CHALLENGE_ID
+    const showGasView = challenge.id === CHALLENGE_3_ID
     
     const challengeProgressAllHouses = challenge.challenge_progress_all_houses
 
@@ -155,7 +158,7 @@ function openDetailView(challenge, challengeProgressObject, currentHouseName) {
                                 <th>Day</th>
                                 <th>Date</th>
                                 <th>Baseline</th>
-                                <th>Expected</th>
+                                ${challenge.id === CHALLENGE_4_ID ? '' : '<th>Expected</th>'}
                                 <th>Actual</th>
                                 <th>Feedback</th>
                             </tr>
@@ -170,7 +173,7 @@ function openDetailView(challenge, challengeProgressObject, currentHouseName) {
                     <td class="font-medium">${data.day}</td>
                     <td>${date}</td>
                     <td>${data.baseline.toFixed(2)} ${showGasView ? "m³" : "kWh"}</td>
-                    <td>${data.expected.toFixed(2)} ${showGasView ? "m³" : "kWh"} (${data.expected_difference}%)</td>
+                    ${challenge.id === CHALLENGE_4_ID ? '' : `<td>${data.expected.toFixed(2)} ${showGasView ? "m³" : "kWh"} (${data.expected_difference}%)</td>`}
                     <td>${data.actual ? data.actual.toFixed(2) : "-"} ${showGasView ? "m³" : "kWh"} (${data.actual_difference ? data.actual_difference.toFixed(2) : '-'}%)</td>
                     <td>${feedbackIcon ?? "-"}</td>
                 </tr>
@@ -192,10 +195,11 @@ function openDetailView(challenge, challengeProgressObject, currentHouseName) {
                         <div class="text-sm text-gray-600 mb-1">Combined baseline Usage</div>
                         <div class="text-xl font-bold text-gray-800">${currentHouseGeneralData.baseline.toFixed(2)} ${showGasView ? "m³" : "kWh"}</div>
                     </div>
+                    ${challenge.id === CHALLENGE_4_ID ? '' : `
                     <div class="bg-green-50 rounded-lg p-4">
                         <div class="text-sm text-gray-600 mb-1">Combined expected Usage</div>
                         <div class="text-xl font-bold text-gray-800">${currentHouseGeneralData.expected.toFixed(2)} ${showGasView ? "m³" : "kWh"} (${currentHouseGeneralData.expected_difference}%)</div>
-                    </div>
+                    </div>`}
                     <div class="bg-purple-50 rounded-lg p-4">
                         <div class="text-sm text-gray-600 mb-1">Combined Actual Usage</div>
                         <div class="text-xl font-bold text-gray-800">${currentHouseGeneralData.actual.toFixed(2)} ${showGasView ? "m³" : "kWh"} (${currentHouseGeneralData.actual_difference.toFixed(2)}%)</div>
