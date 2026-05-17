@@ -21,6 +21,7 @@ export async function fetchAndRenderLeaderboard(supabaseClient) {
 }
 
 function renderLeaderboard(leaderboard) {
+    console.log(leaderboard)
     const tbody = document.getElementById('leaderboard-body');
     if (!tbody) return;
 
@@ -31,6 +32,7 @@ function renderLeaderboard(leaderboard) {
 
     tbody.innerHTML = '';
     leaderboard.forEach((participant, index) => {
+        if(participant.house_name === "Demo Huis") return
         const row = `
             <tr class="hover:bg-gray-50 transition-colors">
                 <td class="py-2 px-4 border-b font-bold text-gray-700">${index + 1}</td>
