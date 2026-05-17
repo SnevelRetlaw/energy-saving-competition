@@ -21,7 +21,6 @@ export async function fetchAndRenderLeaderboard(supabaseClient) {
 }
 
 function renderLeaderboard(leaderboard) {
-    console.log(leaderboard)
     const tbody = document.getElementById('leaderboard-body');
     if (!tbody) return;
 
