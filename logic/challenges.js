@@ -284,6 +284,10 @@ function getFeedbackIcon(feedback) {
 }
 
 function renderComparisonChart(housesData, currentHouseName) {
+    if (currentHouseName !== "Demo Huis"){
+        delete housesData["Demo Huis"]
+    }
+    console.log(housesData)
     const canvas = document.getElementById('comparisonChart');
     if (!canvas) return;
 
