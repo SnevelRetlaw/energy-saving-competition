@@ -48,13 +48,13 @@ export async function fetchActiveAndFinishedChallengesData(supabaseClient) {
 
 }
 
-export async function fetchActiveChallengeData(supabaseClient) {
+export async function fetchActiveOrLastChallengeData(supabaseClient) {
     if (!supabaseClient) throw new Error("Missing Supabase client");
 
     const today = new Date().toISOString().split('T')[0]
 
     try {
-        const { data, error } = await supabaseClient
+        const { data: activeChallengeList, error: activeChallengeError } = await supabaseClient
             .from('Challenges')
             .select('*')
             .lte('start', today)
@@ -62,7 +62,22 @@ export async function fetchActiveChallengeData(supabaseClient) {
             .order('start', { ascending: false })
             .limit(1);
 
-        return data.length > 0 ? data[0] : null;
+        if (activeChallengeError) throw activeChallengeError
+
+        if (activeChallengeList.length > 0){
+            return activeChallengeList[0]
+        }
+
+        const { data: LatestChallenge, error: lastChallengeError } = await supabaseClient
+            .from('Challenges')
+            .select('*')
+            .order('end', { ascending: false })
+            .lte('start', today)
+            .limit(1)
+
+        if(lastChallengeError) throw lastChallengeError
+
+        return LatestChallenge[0]
     } catch (err) {
         console.error("Fetching challenges failed:", err);
         return null;

@@ -1,4 +1,4 @@
-import { fetchCurrentHouseName, fetchActiveChallengeData, fetchChallengeProgress, fetchActiveAndFinishedChallengesData } from "./data-fetcher.js";
+import { fetchCurrentHouseName, fetchActiveOrLastChallengeData, fetchChallengeProgress, fetchActiveAndFinishedChallengesData } from "./data-fetcher.js";
 
 let availableChallenges = []
 let availableProgressObjects = []
@@ -21,7 +21,7 @@ export async function initChallenges(supabaseClient) {
 }
 
 export async function fetchAndRenderChallenges(supabaseClient) {
-    const challenge = await fetchActiveChallengeData(supabaseClient);
+    const challenge = await fetchActiveOrLastChallengeData(supabaseClient);
     const challengeProgress = await fetchChallengeProgress(supabaseClient, [challenge.id], currentHouseId)
     const currentpoints = challengeProgress[0] ? challengeProgress[0].points : 0 
     renderChallenge(challenge, currentpoints);
