@@ -5,10 +5,10 @@ let availableProgressObjects = []
 let currentChallengeIndex = 0
 let currentHouseName = ""
 let currentHouseId = ""
-const CHALLENGE_1_ID = 6
-const CHALLENGE_2_ID = 7
-const CHALLENGE_3_ID = 8
-const CHALLENGE_4_ID = 9
+const CHALLENGE_1_ID = 10
+const CHALLENGE_2_ID = 11
+const CHALLENGE_3_ID = 12
+const CHALLENGE_4_ID = 13
 
 export async function initChallenges(supabaseClient) {
     if (!supabaseClient) {
