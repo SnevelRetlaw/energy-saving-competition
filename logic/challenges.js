@@ -188,13 +188,14 @@ function openDetailView(challenge, challengeProgressObject, currentHouseName) {
         
         for (const [date, data] of Object.entries(challengeProgressObject.challenge_progress)) {
             const feedbackIcon = getFeedbackIcon(data.feedback);
+            const isPositive = data.actual_difference && data.actual_difference > 0
             html += `
                 <tr>
                     <td class="font-medium">${data.day}</td>
                     <td>${date}</td>
                     <td>${data.baseline.toFixed(2)} ${showGasView ? "m³" : "kWh"}</td>
                     ${challenge.id === CHALLENGE_4_ID ? '' : `<td>${data.expected.toFixed(2)} ${showGasView ? "m³" : "kWh"} (${data.expected_difference}%)</td>`}
-                    <td>${data.actual ? data.actual.toFixed(2) : "-"} ${showGasView ? "m³" : "kWh"} (${data.actual_difference ? data.actual_difference.toFixed(2) : '-'}%)</td>
+                    <td>${data.actual ? data.actual.toFixed(2) : "-"} ${showGasView ? "m³" : "kWh"} (${isPositive ? '+' : ''}${data.actual_difference ? data.actual_difference.toFixed(2) : '-'}%)</td>
                     <td>${feedbackIcon ?? "-"}</td>
                 </tr>
             `;
@@ -207,6 +208,7 @@ function openDetailView(challenge, challengeProgressObject, currentHouseName) {
         `;
     }
     if (currentHouseGeneralData) {
+        const isPositive = currentHouseGeneralData.actual_difference > 0
         html += `
             <div class="mb-8">
                 <h3 class="text-lg font-semibold text-gray-700 mb-3">Your House Combined Progress</h3>
@@ -222,7 +224,7 @@ function openDetailView(challenge, challengeProgressObject, currentHouseName) {
                     </div>`}
                     <div class="bg-purple-50 rounded-lg p-4">
                         <div class="text-sm text-gray-600 mb-1">Combined Actual Usage</div>
-                        <div class="text-xl font-bold text-gray-800">${currentHouseGeneralData.actual.toFixed(2)} ${showGasView ? "m³" : "kWh"} (${currentHouseGeneralData.actual_difference.toFixed(2)}%)</div>
+                        <div class="text-xl font-bold text-gray-800">${currentHouseGeneralData.actual.toFixed(2)} ${showGasView ? "m³" : "kWh"} (${isPositive ? '+' : ''}${currentHouseGeneralData.actual_difference.toFixed(2)}%)</div>
                     </div>
                 </div>
             </div>
