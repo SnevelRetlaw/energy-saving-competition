@@ -31,14 +31,16 @@ export async function fetchLeaderboardData(supabaseClient) {
 
 export async function fetchActiveAndFinishedChallengesData(supabaseClient) {
     if (!supabaseClient) throw new Error("Missing Supabase client");
-    const today = new Date().toISOString().split('T')[0]
+    const today = new Date()
+    today.setDate(today.getDate() + 1)
+    const tomorrow = today.toISOString().split('T')[0]
 
     try {
         const { data, error } = await supabaseClient
             .from('Challenges')
             .select('*')
             .order('start', { ascending: true })
-            .lte('start', today)
+            .lte('start', tomorrow)
 
         return data
     } catch (err){
@@ -50,15 +52,17 @@ export async function fetchActiveAndFinishedChallengesData(supabaseClient) {
 
 export async function fetchActiveOrLastChallengeData(supabaseClient) {
     if (!supabaseClient) throw new Error("Missing Supabase client");
-
-    const today = new Date().toISOString().split('T')[0]
+    const today = new Date()
+    const todayStr = today.toISOString().split('T')[0]
+    today.setDate(today.getDate() + 1)
+    const tomorrowStr = today.toISOString().split('T')[0]
 
     try {
         const { data: activeChallengeList, error: activeChallengeError } = await supabaseClient
             .from('Challenges')
             .select('*')
-            .lte('start', today)
-            .gte('end', today)
+            .lte('start', tomorrowStr)
+            .gte('end', todayStr)
             .order('start', { ascending: false })
             .limit(1);
 

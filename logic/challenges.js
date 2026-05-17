@@ -22,6 +22,11 @@ export async function initChallenges(supabaseClient) {
 
 export async function fetchAndRenderChallenges(supabaseClient) {
     const challenge = await fetchActiveOrLastChallengeData(supabaseClient);
+    if (!challenge) {
+        renderEmptyState()
+        return
+    }
+
     const challengeProgress = await fetchChallengeProgress(supabaseClient, [challenge.id], currentHouseId)
     const currentpoints = challengeProgress[0] ? challengeProgress[0].points : 0 
     renderChallenge(challenge, currentpoints);
@@ -54,8 +59,11 @@ async function fetchAndRenderDetailedChallenges(supabaseClient){
     availableProgressObjects = allChallengeProgresses || []
     const currentChallengeProgress = getCorrectChallengeProgress()
 
-    if (availableChallenges.length > 0 && availableProgressObjects.length > 0){
+    if (availableChallenges.length > 0){
         openDetailView(availableChallenges[currentChallengeIndex], currentChallengeProgress, currentHouseName)
+    } else {
+        renderEmptyState()
+        closeDetailView()
     }
 }
 
@@ -269,6 +277,15 @@ function closeDetailView() {
     }
 }
 
+function renderEmptyState() {
+    const challengeContent = document.getElementById("challenges-list")
+    challengeContent.innerHTML = `
+        <div class="empty-state">
+            <p>No active challenge available today</p>
+        </div>
+    `;
+}
+
 function getFeedbackIcon(feedback) {
     const feedbackNum = parseInt(feedback);
     switch (feedbackNum) {
@@ -287,7 +304,6 @@ function renderComparisonChart(housesData, currentHouseName) {
     if (currentHouseName !== "Demo Huis"){
         delete housesData["Demo Huis"]
     }
-    console.log(housesData)
     const canvas = document.getElementById('comparisonChart');
     if (!canvas) return;
 

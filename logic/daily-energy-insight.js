@@ -21,16 +21,17 @@ export async function fetchAndRenderDailyEnergyInsight(){
 
     const DEIData = await fetchAvailableDEIs(supabaseClientGlob)
     availableDEIs = DEIData || []
+    if (availableDEIs.length === 0){
+        renderEmptyState()
+        return
+    }
+
     currentDEIIndex = availableDEIs.length - 1
 
     const currentDEI = availableDEIs[currentDEIIndex]
     const DEIProgressData = (await fetchDEIProgress(supabaseClientGlob, [currentDEI.id], currentHouseId))[0]
 
-    if (availableDEIs.length > 0){
-        renderCompactInsight(currentDEI, DEIProgressData.points)
-    } else {
-        renderEmptyState()
-    }
+    renderCompactInsight(currentDEI, DEIProgressData.points)
 }
 
 export async function fetchAndRenderDetailedDEI(){
@@ -269,7 +270,7 @@ function renderQuiz() {
     `;
 }
 
-function renderEmptyState(container) {
+function renderEmptyState() {
     const deiContent = document.getElementById('daily-energy-insight-content')
     deiContent.innerHTML = `
         <div class="empty-state">
